@@ -187,6 +187,7 @@ class ClaseProductos extends ClaseTablaArticulos{
         $respuesta['consulta'] = $sql;
         return $respuesta;
     }
+    
 	public function posiblesEstados($tabla){
 		// @Objetivo
 		// Obtener los estados posibles para la tabla que indicamos en parametro.

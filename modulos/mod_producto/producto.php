@@ -97,13 +97,13 @@
                     $idVirtuemart = $ref['idVirtuemart'];
                 }
             }
-
+            
             if ($idVirtuemart>0 ){
         $datosWebCompletos=array();
-            if ($CTArticulos->SetPlugin('ClaseVirtuemart') !== false){
+                if ($CTArticulos->SetPlugin('ClaseVirtuemart') !== false){
                     // Creo el objeto de plugin Virtuemart.
-                    $ObjVirtuemart = $CTArticulos->SetPlugin('ClaseVirtuemart');  
-                     // Cargo caja_input de parametros de plugin de virtuemart.
+                    $ObjVirtuemart = $CTArticulos->SetPlugin('ClaseVirtuemart');     
+                    // Cargo caja_input de parametros de plugin de virtuemart.
                     $ClasesParametrosPluginVirtuemart = new ClaseParametros($RutaServidor . $HostNombre . '/plugins/mod_producto/virtuemart/parametros.xml');
                     $parametrosVirtuemart = $ClasesParametrosPluginVirtuemart->getRoot();
                     $OtrosVarJS = $Controler->ObtenerCajasInputParametros($parametrosVirtuemart);
@@ -114,13 +114,13 @@
                         $Producto['comprobaciones'][]= $datosWebCompletos['comprobarIvas']['comprobaciones'];
                     }
                 }else{
-                    if($id>0){
-                        if($ObjVirtuemart->getTiendaWeb()!=false){
-                            $tiendaWeb=$ObjVirtuemart->getTiendaWeb();
-                            $datosWebCompletos['datosProductoWeb']['html']=$ObjVirtuemart->htmlDatosVacios($id, $tiendaWeb['idTienda']);
+                        if($id>0){
+                            if($ObjVirtuemart->getTiendaWeb()!=false){
+                                $tiendaWeb=$ObjVirtuemart->getTiendaWeb();
+                                $datosWebCompletos['datosProductoWeb']['html']=$ObjVirtuemart->htmlDatosVacios($id, $tiendaWeb['idTienda']);
+                            }
                         }
-                    }
-                     
+                         
                 }
            // Cargamos el plugin de Vehiculos
                 if ($CTArticulos->SetPlugin('ClaseVehiculos') !== false){
@@ -132,8 +132,7 @@
                  }
                
            }   
-            }
-            
+        }
         
 				
 		
@@ -151,7 +150,7 @@
             $VarJS = $Controler->ObtenerCajasInputParametros($parametros).$OtrosVarJS;
 		?>
          <script src="<?php echo $HostNombre; ?>/jquery/jquery-ui.min.js"></script>
-          <link rel="stylesheet" href="<?php echo $HostNombre;?>/jquery/jquery-ui.min.css" type="text/css">
+         <link rel="stylesheet" href="<?php echo $HostNombre;?>/jquery/jquery-ui.min.css" type="text/css">
          <script src="<?php echo $HostNombre; ?>/lib/js/autocomplete.js"></script>    
        
         <script src="<?php echo $HostNombre; ?>/modulos/mod_producto/funciones.js"></script>
@@ -353,11 +352,6 @@
                             
                                 <div class="panel-group">
                                     <?php
-                                    if (isset($htmlVehiculos)){
-                                            $num = 5; // Numero collapse;
-                                            $titulo = 'Vehiculos que montan este productos.';
-                                            echo  htmlPanelDesplegable($num,$titulo,$htmlVehiculos);
-                                    }
                                     if(isset( $datosWebCompletos['htmlnotificaciones']['html'])){
                                          $num = 6; // Numero collapse;
                                             $titulo = 'Notificaciones de clientes.';
