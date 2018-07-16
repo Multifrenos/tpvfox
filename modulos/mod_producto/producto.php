@@ -7,6 +7,7 @@
         include_once $URLCom.'/modulos/mod_producto/funciones.php';
         include_once $URLCom.'/controllers/Controladores.php';
         include_once $URLCom.'/modulos/mod_producto/clases/ClaseProductos.php';
+        $OtrosVarJS ='';
         // Creo objeto de controlador comun.
 		$Controler = new ControladorComun; 
 		// Añado la conexion
@@ -17,13 +18,10 @@
 		$parametros = $ClasesParametros->getRoot();
 		// Cargamos configuracion modulo tanto de parametros (por defecto) como si existen en tabla modulo_configuracion 
 		$conf_defecto = $ClasesParametros->ArrayElementos('configuracion');
-		
 		// Creamos objeto de productos		
 		$CTArticulos = new ClaseProductos($BDTpv);
 		
 		$id = 0 ; // Por  defecto el id a buscar es 0
-		$idVirtuemart=0;	
-        $VarJSVirtuemart="";
        
 		$ivas = $CTArticulos->getTodosIvas(); // Obtenemos todos los ivas.
      
@@ -34,7 +32,6 @@
 			// Modificar Ficha Producto
 			$id=$_GET['id']; // Obtenemos id producto para modificar.
 			$titulo .= "Modificar";
-            
 		} else {
 			// Quiere decir que no hay id, por lo que es nuevo
 			$titulo .= "Crear";
@@ -94,13 +91,14 @@
 		// Cargamos el plugin que nos interesa.
         if( isset($Producto['ref_tiendas'])){
             // Esto no es del todo correcto... ?
+            $idVirtuemart = 0;
             foreach ($Producto['ref_tiendas'] as $ref){
                 if ($ref['idVirtuemart'] >0){
                     $idVirtuemart = $ref['idVirtuemart'];
                 }
             }
-        }
-        $VarJS = $Controler->ObtenerCajasInputParametros($parametros);
+
+            if ($idVirtuemart>0 ){
         $datosWebCompletos=array();
             if ($CTArticulos->SetPlugin('ClaseVirtuemart') !== false){
                     // Creo el objeto de plugin Virtuemart.
@@ -108,8 +106,7 @@
                      // Cargo caja_input de parametros de plugin de virtuemart.
                     $ClasesParametrosPluginVirtuemart = new ClaseParametros($RutaServidor . $HostNombre . '/plugins/mod_producto/virtuemart/parametros.xml');
                     $parametrosVirtuemart = $ClasesParametrosPluginVirtuemart->getRoot();
-                    $VarJSVirtuemart = $Controler->ObtenerCajasInputParametros($parametrosVirtuemart); 
-                    if ($idVirtuemart>0 ){ 
+                    $OtrosVarJS = $Controler->ObtenerCajasInputParametros($parametrosVirtuemart);
                     // Obtengo se conecta a la web y obtiene los datos de producto cruzado.
                     $datosWebCompletos=$ObjVirtuemart->datosTiendaWeb($idVirtuemart,  $Producto['iva']);
                     // Esto para comprobaciones iva... ??? Es correcto , si esto se hace JSON, no por POST.
@@ -125,17 +122,16 @@
                     }
                      
                 }
-
-            }   
-            if ($idVirtuemart>0 ){ 
-            // Cargamos el plugin de Vehiculos
+           // Cargamos el plugin de Vehiculos
                 if ($CTArticulos->SetPlugin('ClaseVehiculos') !== false){
-                   $ObjVersiones= $CTArticulos->SetPlugin('ClaseVehiculos');
-                   $vehiculos =$ObjVersiones->ObtenerVehiculosUnProducto($idVirtuemart);
-                    if (isset($vehiculos['Datos'])) {
-                        $htmlVehiculos = $vehiculos['Datos']['html'];
-                    }
-                }
+                       $ObjVersiones= $CTArticulos->SetPlugin('ClaseVehiculos');
+                       $vehiculos =$ObjVersiones->ObtenerVehiculosUnProducto($idVirtuemart);
+                        if (isset($vehiculos['Datos'])) {
+                            $htmlVehiculos = $vehiculos['Datos']['html'];
+                        }
+                 }
+               
+           }   
             }
             
         
@@ -152,7 +148,7 @@
 		
 		<!-- Creo los objetos de input que hay en tpv.php no en modal.. esas la creo al crear hmtl modal -->
 		<?php // -------------- Obtenemos de parametros cajas con sus acciones ---------------  //
-			$VarJS = $Controler->ObtenerCajasInputParametros($parametros);
+            $VarJS = $Controler->ObtenerCajasInputParametros($parametros).$OtrosVarJS;
 		?>
          <script src="<?php echo $HostNombre; ?>/jquery/jquery-ui.min.js"></script>
           <link rel="stylesheet" href="<?php echo $HostNombre;?>/jquery/jquery-ui.min.css" type="text/css">
@@ -163,15 +159,10 @@
 		<script src="<?php echo $HostNombre; ?>/lib/js/teclado.js"></script>
 
           
-		<script src="<?php echo $HostNombre; ?>/modulos/mod_producto/funciones.js"></script>
-		<!-- Creo los objetos de input que hay en tpv.php no en modal.. esas la creo al crear hmtl modal -->
-		<?php // -------------- Obtenemos de parametros cajas con sus acciones ---------------  //
-			//~ $VarJS = $Controler->ObtenerCajasInputParametros($parametros);
-		?>	
+		
 		<script type="text/javascript">
 		// Objetos cajas de tpv
 		<?php echo $VarJS;?>
-        <?php echo $VarJSVirtuemart;?>
 		<?php 
 			echo  'var producto='.json_encode($Producto).';';
 		?>
