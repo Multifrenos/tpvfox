@@ -19,6 +19,8 @@
 
         // Cargamos el plugin que nos interesa.
         if ($CTArticulos->SetPlugin('ClaseVehiculos') !== false){
+            // Existe plguin ObjeVersiones por lo que cargamos css para ese plugin.
+            echo '<link rel="stylesheet" href="'.$HostNombre.'/jquery/jquery-ui.min.css" type="text/css">';
             $ObjVersiones= $CTArticulos->SetPlugin('ClaseVehiculos');
             $ClasesParametrosPluginVehiculos = new ClaseParametros($RutaServidor . $HostNombre . '/plugins/mod_producto/vehiculos/parametros.xml');
             $parametrosVehiculos = $ClasesParametrosPluginVehiculos->getRoot();
