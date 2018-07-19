@@ -13,12 +13,21 @@
         $OtrosVarJS ='';
         $htmlplugins = array();
         $CTArticulos = new ClaseProductos($BDTpv);
-        $Controler = new ControladorComun; // Controlado comun..
+		$Controler = new ControladorComun; // Controlado comun..
         // Añado la conexion
         $Controler->loadDbtpv($BDTpv);
 
         // Cargamos el plugin que nos interesa.
-
+        if ($CTArticulos->SetPlugin('ClaseVehiculos') !== false){
+            // Existe plguin ObjeVersiones por lo que cargamos css para ese plugin.
+            echo '<link rel="stylesheet" href="'.$HostNombre.'/jquery/jquery-ui.min.css" type="text/css">';
+            $ObjVersiones= $CTArticulos->SetPlugin('ClaseVehiculos');
+            $ClasesParametrosPluginVehiculos = new ClaseParametros($RutaServidor . $HostNombre . '/plugins/mod_producto/vehiculos/parametros.xml');
+            $parametrosVehiculos = $ClasesParametrosPluginVehiculos->getRoot();
+            $OtrosVarJS .= $Controler->ObtenerCajasInputParametros($parametrosVehiculos);
+            $Ov=$ObjVersiones->htmlFormularioSeleccionVehiculo();
+            $htmlplugins['html'] = $Ov['html'];
+        }
         //  Fin de carga de plugins.
 
         // Inicializo varibles por defecto.
@@ -121,6 +130,7 @@
         <?php echo $VarJS;?>
         </script>
         <script src="<?php echo $HostNombre; ?>/lib/js/teclado.js"></script>
+        <script src="<?php echo $HostNombre; ?>/lib/js/autocomplete.js"></script>
         
     </head>
 
