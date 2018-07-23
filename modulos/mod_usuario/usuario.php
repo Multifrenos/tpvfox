@@ -8,6 +8,8 @@
 		include_once $URLCom.'/modulos/mod_usuario/funciones.php';
 		include_once $URLCom.'/modulos/mod_usuario/clases/claseUsuarios.php';
         include_once $URLCom.'/modulos/mod_incidencias/clases/ClaseIncidencia.php';
+        include_once $URLCom.'/clases/ClasePermisos.php';
+      
         //~ include ("./../mod_conexion/conexionBaseDatos.php");
 		//include ("./ObjetoRecambio.php");
 		$Cusuario=new ClaseUsuarios($BDTpv);
@@ -25,7 +27,8 @@
 	<body>
 		<script src="<?php echo $HostNombre; ?>/modulos/mod_usuario/funciones.js"></script>
 		<?php
-        include './../../header.php';
+        //~ include './../../header.php';
+         include_once $URLCom.'/modulos/mod_menu/menu.php';
 		// ===========  datos usuario segun id enviado por url============= //
 		$idTienda = $Tienda['idTienda'];
 		$tabla= 'usuarios'; // Tablas que voy utilizar.
@@ -38,8 +41,15 @@
 		
 		
 		if (isset($_GET['id'])) {
+            
 			// Modificar Ficha Usuario
 			$id=$_GET['id']; // Obtenemos id para modificar.
+            $ClasePermisos=new ClasePermisos($id, $BDTpv);
+           
+            $permisosUsuario=$ClasePermisos->permisos['resultado'];
+             //~ echo '<pre>';
+            //~ print_r($permisosUsuario);
+            //~ echo '</pre>';
 			$UsuarioUnico = verSelec($BDTpv,$id,$tabla);
 			$titulo = "Modificar Usuario";
 			$passwrd= 'password'; // Para mostrar ***** en password
@@ -65,6 +75,11 @@
 				$incidenciasUsuario=$Cincidencias->incidenciasSinResolverUsuario($id);
 				$htmlConfiguracion=htmlTablaGeneral($configuracionesUsuario['datos'], $HostNombre, "configuracion");
                 $htmlInicidenciasDesplegable=htmlTablaIncidencias($incidenciasUsuario);
+                $htmlPermisosUsuario=htmlPermisosUsuario($permisosUsuario);
+                echo count($permisosUsuario);
+                //~ echo '<pre>';
+                //~ print_r($permisosUsuario);
+                //~ echo '</pre>';
 			}
 		} else {
 			// Creamos ficha Usuario.
@@ -108,7 +123,34 @@
 						$mensaje = "Su registro de usuario fue editado.";
 					}
 				};
+                $i=0;
+                foreach($permisosUsuario as $permisos){
+                     
+                    if(isset($_POST['permiso_'.$i])){
+                           $permiso=1;
+                            //~ $mod=$ClasePermisos->modificarPermisoUsuario($permisos, $_POST['permiso_'.$i], $id);
+                            //~ echo '<pre>';
+                            //~ print_r($mod);
+                            //~ echo '</pre>';
+                    }else{
+                        $permiso=0;
+                        //~ $mod=$ClasePermisos->modificarPermisoUsuario($permisos, 0, $id);
+                    }
+                    $mod=$ClasePermisos->modificarPermisoUsuario($permisos, $permiso, $id);
+                    $i++;
+                    //~ echo '<pre>';
+                    //~ print_r($mod);
+                    //~ echo '</pre>';
+                }
+                $ClasePermisos=new ClasePermisos($id, $BDTpv);
+           
+            $permisosUsuario=$ClasePermisos->permisos['resultado'];
+                 $htmlPermisosUsuario=htmlPermisosUsuario($permisosUsuario);
+                
 			}
+            //~ echo '<pre>';
+            //~ print_r($permisosUsuario);
+            //~ echo '</pre>';
 		}
 		
 		?>
@@ -213,6 +255,9 @@
                         $num=2;
                         $titulo='Incidencias Sin Resolver';
                         echo htmlPanelDesplegable($num, $titulo, $htmlInicidenciasDesplegable);
+                        $num=3;
+                        $titulo='Permisos';
+                        echo htmlPanelDesplegable($num, $titulo, $htmlPermisosUsuario);
 						?>
 					</div>
 				</div>
@@ -220,9 +265,9 @@
 <!--
 					<input type="submit" value="Guardar">
 -->
-				
+	</form>			
 				<div class="col-md-9">
-				</form>
+				
 			</div>
 			
 		</div>

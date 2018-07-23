@@ -78,7 +78,7 @@
 
 <body>
         <?php
-        include './../../header.php';
+        include_once $URLCom.'/modulos/mod_menu/menu.php';
         ?>
         <?php
 	//~ echo '<pre>';

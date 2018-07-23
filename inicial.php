@@ -32,10 +32,12 @@ $Ruta = __DIR__.'/';
 	
 	$thisTpv = new ClaseSession();
 	$BDTpv = $thisTpv->getConexion(); // Para la antigua conexion. 
+   
 	// [PENDIENTE ] Eliminar mod_conexion/conexionBaseDatos , falta arreglar mod_importar
 	//~ $thisTpv->comprobarEstado();
 
-	$Usuario= (isset($_SESSION['usuarioTpv']) ? $_SESSION['usuarioTpv'] : array('group_id'=>0,'login' =>'invitado'));
+	$Usuario= (isset($_SESSION['usuarioTpv']) ? $_SESSION['usuarioTpv'] : array('id'=>0, 'group_id'=>0,'login' =>'invitado'));
+    $ClasePermisos=$thisTpv->permisos;
 	$Tienda = (isset($_SESSION['tiendaTpv']) ? $_SESSION['tiendaTpv']: array('razonsocial'=>''));
-
+    
 	
