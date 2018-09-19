@@ -27,7 +27,7 @@
 	$idPedido=0;
 	$numPedidoTemp=0;
 	$estado='Abierto';
-	$idProveedor=0;
+	$idProveedor='';
 	$nombreProveedor="";
 	$Datostotales=array();
 	$textoNum="";
@@ -48,10 +48,9 @@
 			$idPedido=$_GET['id'];
 			$textoNum=$idPedido;
 			$datosPedido=$Cpedido->DatosPedido($idPedido);
+            $estado='Modificado';
 			if ($datosPedido['estado']=='Facturado'){
 				$estado=$datosPedido['estado'];
-			}else{
-				$estado='Modificado';
 			}
 			$productosPedido=$Cpedido->ProductosPedidos($idPedido);
 			$ivasPedido=$Cpedido->IvasPedidos($idPedido);
@@ -66,7 +65,6 @@
 			$incidenciasAdjuntas=incidenciasAdjuntas($idPedido, "mod_compras", $BDTpv, "pedidos");
 			$inciden=count($incidenciasAdjuntas['datos']);
 		}else{
-			$bandera=1;
 			if (isset($_GET['tActual'])){
 				$numPedidoTemp=$_GET['tActual'];
 				$pedido=$Cpedido->DatosTemporal($numPedidoTemp);
@@ -104,8 +102,6 @@ if (isset($_POST['Guardar'])){
 	$guardar=guardarPedido($_POST, $_GET, $BDTpv, $Datostotales);
 	if (count($guardar)==0){
 		header('Location: pedidosListado.php');
-		
-
 	}else{
 		foreach ($guardar as $error){
 				echo '<div class="'.$error['class'].'">'
@@ -114,19 +110,10 @@ if (isset($_POST['Guardar'])){
 			}
 	}
 }
+$htmlIvas=htmlTotales($Datostotales);
 ?>
-<script src="<?php echo $HostNombre; ?>/modulos/mod_compras/funciones.js"></script>
-<script src="<?php echo $HostNombre; ?>/modulos/mod_incidencias/funciones.js"></script>
-<script src="<?php echo $HostNombre; ?>/controllers/global.js"></script> 
-<script src="<?php echo $HostNombre; ?>/lib/js/teclado.js"></script>
+
 <script type="text/javascript">
-	<?php
-	 if (isset($_POST['Cancelar'])){
-		  ?>
-		 mensajeCancelar(<?php echo$numPedidoTemp;?>, <?php echo "'".$dedonde."'"; ?>);
-		  <?php
-	  }
-	  ?>
 <?php echo $VarJS;?>
      function anular(e) {
           tecla = (document.all) ? e.keyCode : e.which;
@@ -141,7 +128,7 @@ if (isset($_POST['Guardar'])){
 		cabecera['estado'] ='<?php echo $estado ;?>'; // Si no hay datos GET es 'Abierto'
 		cabecera['idTemporal'] = <?php echo $numPedidoTemp ;?>;
 		cabecera['idReal'] = <?php echo $idPedido ;?>;
-		cabecera['idProveedor']=<?php echo $idProveedor ;?>;
+		cabecera['idProveedor']='<?php echo $idProveedor ;?>';
 		cabecera['fecha']='<?php echo $fecha;?>';
 		 // Si no hay datos GET es 'Nuevo';
 	var productos = []; // No hace definir tipo variables, excepto cuando intentamos añadir con push, que ya debe ser un array
@@ -166,11 +153,20 @@ if (isset($_POST['Guardar'])){
 	 }
 	?>
 </script>
-<?php 
-if ($idProveedor===0){
-	 $idProveedor="";
-}
-?>
+<script src="<?php echo $HostNombre; ?>/modulos/mod_compras/funciones.js"></script>
+<script src="<?php echo $HostNombre; ?>/controllers/global.js"></script> 
+<script src="<?php echo $HostNombre; ?>/lib/js/teclado.js"></script>
+<script src="<?php echo $HostNombre; ?>/modulos/mod_incidencias/funciones.js"></script>
+<script src="<?php echo $HostNombre; ?>/modulos/mod_compras/js/AccionesDirectas.js"></script>
+<script type="text/javascript">
+    <?php
+	 if (isset($_POST['Cancelar'])){
+		  ?>
+		 mensajeCancelar(<?php echo$numPedidoTemp;?>, <?php echo "'".$dedonde."'"; ?>);
+		  <?php
+	  }
+	  ?>
+</script>
 </head>
 <body>
 <?php
@@ -178,38 +174,47 @@ if ($idProveedor===0){
      include_once $URLCom.'/modulos/mod_menu/menu.php';
 ?>
 <div class="container">
-	<?php 
-	if($idPedido>0){
-		?>
-	<input class="btn btn-warning" size="12" onclick="abrirModalIndicencia('<?php echo $dedonde;?>' , configuracion, 0,<?php echo $idPedido ;?>);" value="Añadir incidencia " name="addIncidencia" id="addIncidencia">
-		<?php
-	}
-	if($inciden>0){
-		?>
-		<input class="btn btn-info" size="15" onclick="abrirIncidenciasAdjuntas(<?php echo $idPedido;?>, 'mod_compras', 'pedidos')" value="Incidencias Adjuntas " name="incidenciasAdj" id="incidenciasAdj">
-		<?php
-	}
-	?>
 	<h2 class="text-center"> <?php echo $titulo;?></h2>
-	
 	<form class="form-group" action="" method="post" name="formProducto" onkeypress="return anular(event)">
 		<div class="col-md-12">
 			<div class="col-md-8" >
 				<a  href="pedidosListado.php" onclick="ModificarEstadoPedido(pedido, Pedido);">Volver Atrás</a>
-				<input class="btn btn-primary" type="submit" value="Guardar" name="Guardar" id="bGuardar">
+				
+                <?php 
+                if($idPedido>0){
+                    echo '<input class="btn btn-warning" size="12" 
+                    onclick="abrirModalIndicencia('."'".$dedonde."'".' , configuracion, 0, '.$idPedido.');" 
+                    value="Añadir incidencia " name="addIncidencia" id="addIncidencia">';
+                    
+                }
+               if($inciden>0){
+                   echo '<input class="btn btn-info" size="15" 
+                   onclick="abrirIncidenciasAdjuntas('.$idPedido.', '."'".'mod_compras'."'".', '."'".'pedidos'."'".')"
+                   value="Incidencias Adjuntas " name="incidenciasAdj" id="incidenciasAdj">';
+               }
+                
+                ?>
+                <input class="btn btn-primary" type="submit" value="Guardar" name="Guardar" id="bGuardar">
 			</div>
-			<div class="col-md-4 " >
-			<input type="submit"class="pull-right btn btn-danger"  value="Cancelar" name="Cancelar" id="bCancelar">
-			
-			<?php
-			if (isset($numPedidoTemp)){
-			?>
-				<input  type="text" style="display:none;" name="idTemporal" value=<?php echo $numPedidoTemp;?>>
-			<?php
-			}
-			?>
-			</div>
-			
+            <div class="col-md-4 text-right" >
+                <span class="glyphicon glyphicon-cog" title="Escoje casilla de salto"></span>
+                <select  title="Escoje casilla de salto" id="salto" name="salto">
+                    <option value="0">Seleccionar</option>
+                    <option value="1">Id Articulo</option>
+                    <option value="2">Referencia</option>
+                    <option value="3">Referencia Proveedor</option>
+                    <option value="4">Cod Barras</option>
+                    <option value="5">Descripción</option>
+                </select>
+               <input type="submit"class=" btn btn-danger"  value="Cancelar" name="Cancelar" id="bCancelar">
+                <?php
+                if (isset($numPedidoTemp)){
+                ?>
+                    <input  type="text" style="display:none;" name="idTemporal" value=<?php echo $numPedidoTemp;?>>
+                <?php
+                }
+                ?>
+            </div>
 		</div>
 	<div class="col-md-8">
 			<div class="col-md-3">
@@ -223,17 +228,6 @@ if ($idProveedor===0){
 			<div class="col-md-3">
 				<label>Fecha Pedido:</label>
 				<input type="text" name="fecha" id="fecha" data-obj= "cajaFecha"  value="<?php echo $fecha;?>" onkeydown="controlEventos(event)" pattern="[0-9]{2}-[0-9]{2}-[0-9]{4}" placeholder='dd-mm-yyyy' title=" Formato de entrada dd-mm-yyyy">
-			</div>
-				<div class="col-md-3">
-					<strong>Escoger casilla de salto:</strong><br>
-					<select id="salto" name="salto">
-						<option value="0">Seleccionar</option>
-						<option value="1">Id Articulo</option>
-						<option value="2">Referencia</option>
-						<option value="3">Referencia Proveedor</option>
-						<option value="4">Cod Barras</option>
-						<option value="5">Descripción</option>
-					</select>
 			</div>
 		<div class="col-md-12">
 			<label>Proveedor:</label>
@@ -300,7 +294,6 @@ if ($idProveedor===0){
 		</thead>
 		<tbody>
 			<?php 
-			$htmlIvas=htmlTotales($Datostotales);
 			echo $htmlIvas['html']; ?>
 		</tbody>
 		</table>
@@ -334,7 +327,7 @@ include $RutaServidor.'/'.$HostNombre.'/plugins/modal/busquedaModal.php';
 		$("#Row0").css("display", "none");
 		<?php
 	}
-	if ($estado=="Facturado"){
+	if ($estado=="Facturado" || $_GET['estado']=="ver"){
 		?>
 		$("#tabla").find('input').attr("disabled", "disabled");
 		$("#tabla").find('a').css("display", "none");

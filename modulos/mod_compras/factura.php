@@ -22,11 +22,8 @@
 	$CforPago=new FormasPago($BDTpv);
 	//iniciación de las variables
 	$dedonde="factura";
-	$Tienda = $_SESSION['tiendaTpv'];
-	$Usuario = $_SESSION['usuarioTpv'];// array con los datos de usuario
 	$titulo="Factura De Proveedor";
 	$estado='Abierto';
-	$estadoCab="'".'Abierto'."'";
 	$formaPago=0;
 	$comprobarAlbaran=0;
 	$importesFactura=array();
@@ -36,6 +33,7 @@
 	$fechaImporte=date('Y-d-m');
 	$numAdjunto=0;
 	$suNumero="";
+    $idProveedor="";
 	$inciden=0;
 	//Carga de los parametros de configuración y las acciones de las cajas
 	$parametros = $ClasesParametros->getRoot();		
@@ -62,28 +60,15 @@
 		$abaranesFactura=$CFac->albaranesFactura($idFactura);
 		$textoFormaPago=htmlFormasVenci($formaPago, $BDTpv);
 		$datosImportes=$CFac->importesFactura($idFactura);
-        
-       //~ echo count($abaranesFactura);
-       //~ if(count($abaranesFactura)==0){
-           $albaranesFactura=addAlbaranesFacturas($productosFactura, $idFactura, $BDTpv);
-        //~ echo '<pre>';
-        //~ print_r($albaranesFactura);
-        //~ echo '</pre>';
-       //~ }
-        
-        
+        $albaranesFactura=addAlbaranesFacturas($productosFactura, $idFactura, $BDTpv);
 		$estado=$datosFactura['estado'];
-		$estadoCab="'".$datosFactura['estado']."'";
 		$date=date_create($datosFactura['Fecha']);
 		$fecha=date_format($date,'d-m-Y');
-		$fechaCab="'".$fecha."'";
 		$idFacturaTemporal=0;
 		$numFactura=$datosFactura['Numfacpro'];
 		$idProveedor=$datosFactura['idProveedor'];
 		if (isset($datosFactura['Su_num_factura'])){
 			$suNumero=$datosFactura['Su_num_factura'];
-		}else{
-			$suNumero="";
 		}
 		if ($idProveedor){
 			$proveedor=$Cprveedor->buscarProveedorId($idProveedor);
@@ -104,45 +89,36 @@
 		$incidenciasAdjuntas=incidenciasAdjuntas($idFactura, "mod_compras", $BDTpv, "factura");
 		$inciden=count($incidenciasAdjuntas['datos']);
 	}else{
-		$fecha=date('d-m-Y');
-		$fechaCab="'".$fecha."'";
 		$idFacturaTemporal=0;
 		$idFactura=0;
 		$numFactura=0;
-		$idProveedor=0;
-		$suNumero="";
 		$nombreProveedor="";
 	//Si recibe los datos de un temporal
 		if (isset($_GET['tActual'])){
 				$idFacturaTemporal=$_GET['tActual'];
 				$datosFactura=$CFac->buscarFacturaTemporal($idFacturaTemporal);
+                $numFactura=0;
+                $idFactura=0;
+                $fecha1=date_create($datosFactura['fechaInicio']);
+                $fecha =date_format($fecha1, 'd-m-Y');
+                $suNumero="";
 				if (isset ($datosFactura['numfacpro'])){
 					$numFactura=$datosFactura['numfacpro'];
 					$datosReal=$CFac->buscarFacturaNumero($numFactura);
 					$idFactura=$datosReal['id'];
 					$textoNum=$idFactura;
-				}else{
-					$numFactura=0;
-					$idFactura=0;
 				}
 				if ($datosFactura['fechaInicio']=="0000-00-00 00:00:00"){
 					$fecha=date('d-m-Y');
-				}else{
-					$fecha1=date_create($datosFactura['fechaInicio']);
-					$fecha =date_format($fecha1, 'd-m-Y');
 				}
 				if (isset($datosFactura['Su_numero'])){
 					$suNumero=$datosFactura['Su_numero'];
-				}else{
-					$suNumero="";
 				}
 				$textoFormaPago=htmlFormasVenci($formaPago, $BDTpv);
 				$idProveedor=$datosFactura['idProveedor'];
 				$proveedor=$Cprveedor->buscarProveedorId($idProveedor);
 				$nombreProveedor=$proveedor['nombrecomercial'];
-				$fechaCab="'".$fecha."'";
 				$importesFactura=json_decode($datosFactura['FacCobros'], true);
-				$estadoCab="'".'Abierto'."'";
 				$factura=$datosFactura;
 				$productos =  json_decode($datosFactura['Productos']) ;
 				$albaranes=json_decode($datosFactura['Albaranes']);
@@ -193,16 +169,14 @@
 	// En configuracion podemos definir SI / NO
 	<?php echo 'var configuracion='.json_encode($configuracionArchivo).';';?>	
 	var cabecera = []; // Donde guardamos idCliente, idUsuario,idTienda,FechaInicio,FechaFinal.
-		cabecera['idUsuario'] = <?php echo $Usuario['id'];?>; // Tuve que adelantar la carga, sino funcionaria js.
+		cabecera['idUsuario'] = <?php echo $Usuario['id'];?>; 
 		cabecera['idTienda'] = <?php echo $Tienda['idTienda'];?>; 
-		cabecera['estado'] =<?php echo $estadoCab ;?>; // Si no hay datos GET es 'Nuevo'
+		cabecera['estado'] ='<?php echo $estado ;?>'; 
 		cabecera['idTemporal'] = <?php echo $idFacturaTemporal ;?>;
 		cabecera['idReal'] = <?php echo $idFactura ;?>;
-		cabecera['fecha'] = <?php echo $fechaCab ;?>;
-		cabecera['idProveedor'] = <?php echo $idProveedor ;?>;
+		cabecera['fecha'] ='<?php echo $fecha ;?>';
+		cabecera['idProveedor'] = '<?php echo $idProveedor ;?>';
 		cabecera['suNumero']='<?php echo $suNumero; ?>';
-		
-		
 		 // Si no hay datos GET es 'Nuevo';
 	var productos = []; // No hace definir tipo variables, excepto cuando intentamos añadir con push, que ya debe ser un array
 	var albaranes =[];
@@ -241,21 +215,14 @@
 
 ?>
 </script>
-<?php 
-if ($idProveedor==0){
-	$idProveedor="";
-	
-}
-
-?>
 </head>
 <body>
-	<script src="<?php echo $HostNombre; ?>/modulos/mod_compras/funciones.js"></script>
     <script src="<?php echo $HostNombre; ?>/controllers/global.js"></script> 
-    <script src="<?php echo $HostNombre; ?>/modulos/mod_incidencias/funciones.js"></script>
     <script src="<?php echo $HostNombre; ?>/lib/js/teclado.js"></script>
+    <script src="<?php echo $HostNombre; ?>/modulos/mod_incidencias/funciones.js"></script>
+	<script src="<?php echo $HostNombre; ?>/modulos/mod_compras/funciones.js"></script>
+    <script src="<?php echo $HostNombre; ?>/modulos/mod_compras/js/AccionesDirectas.js"></script>
 <?php
-	//~ include '../../header.php';
      include_once $URLCom.'/modulos/mod_menu/menu.php';
 ?>
 <script type="text/javascript">
@@ -273,28 +240,37 @@ if ($idProveedor==0){
       }
 </script>
 <div class="container">
-	<?php 
-	if($idFactura>0){
-		?>
-	<input class="btn btn-warning" size="12" onclick="abrirModalIndicencia('<?php echo $dedonde;?>' , configuracion, 0,<?php echo $idFactura ;?>);" value="Añadir incidencia " name="addIncidencia" id="addIncidencia">
-<?php
-	}
-	if($inciden>0){
-		?>
-		<input class="btn btn-info" size="15" onclick="abrirIncidenciasAdjuntas(<?php echo $idFactura;?>, 'mod_compras', 'factura')" value="Incidencias Adjuntas " name="incidenciasAdj" id="incidenciasAdj">
-		<?php
-	}
-	?>
 			<h2 class="text-center"> <?php echo $titulo;?></h2>
 			<form action="" method="post" name="formProducto" onkeypress="return anular(event)">
 				<div class="col-md-12">
 				<div class="col-md-8" >
-				<a  href="./facturasListado.php">Volver Atrás</a>
+                    <a  href="./facturasListado.php">Volver Atrás</a>
 					<input class="btn btn-primary" type="submit" value="Guardar" name="Guardar" id="bGuardar">
+                    <?php 
+                    if($idFactura>0){
+                        echo '<input class="btn btn-warning" size="12" 
+                        onclick="abrirModalIndicencia('."'".$dedonde."'".' , configuracion, 0,'.$idFactura.');"
+                        value="Añadir incidencia " name="addIncidencia" id="addIncidencia">';
+                    }
+                    if($inciden>0){
+                        echo ' <input class="btn btn-info" size="15" 
+                        onclick="abrirIncidenciasAdjuntas('.$idFactura.', '."'".'mod_compras'."'".', '."'".'factura'."'".')" 
+                        value="Incidencias Adjuntas " name="incidenciasAdj" id="incidenciasAdj">';
+                    }
+                    ?>
 				</div>
-				<div class="col-md-4 " >
-					<input type="submit" class="pull-right btn btn-danger"  value="Cancelar" name="Cancelar" id="bCancelar">
-					</div>
+				<div class="col-md-4 text-right" >
+                    <span class="glyphicon glyphicon-cog" title="Escoje casilla de salto"></span>
+					 <select  title="Escoje casilla de salto" id="salto" name="salto">
+						<option value="0">Seleccionar</option>
+						<option value="1">Id Articulo</option>
+						<option value="2">Referencia</option>
+						<option value="3">Referencia Proveedor</option>
+						<option value="4">Cod Barras</option>
+						<option value="5">Descripción</option>
+					</select>
+                    <input type="submit" class=" btn btn-danger"  value="Cancelar" name="Cancelar" id="bCancelar">
+                </div>
 					<?php
 				if ($idFacturaTemporal>0){
 					?>
@@ -324,19 +300,6 @@ if ($idProveedor==0){
 				
 			
 		</div>
-		<div class="col-md-12">
-			<div class="col-md-3">
-					<strong>Escoger casilla de salto:</strong><br>
-					<select id="salto" name="salto">
-						<option value="0">Seleccionar</option>
-						<option value="1">Id Articulo</option>
-						<option value="2">Referencia</option>
-						<option value="3">Referencia Proveedor</option>
-						<option value="4">Cod Barras</option>
-						<option value="5">Descripción</option>
-					</select>
-			</div>
-		</div>
 		<div class="form-group">
 			<label>Proveedor:</label>
 			<input type="text" id="id_proveedor" name="id_proveedor" data-obj= "cajaIdProveedor" value="<?php echo $idProveedor;?>" size="2" onkeydown="controlEventos(event)" placeholder='id'>
@@ -347,7 +310,7 @@ if ($idProveedor==0){
 	<div class="col-md-5" >
 	<div class="row">
 		<div>
-			<div style="margin-top:-50px;" id="tablaAl" style="<?php echo $style;?>">
+			<div style="margin-top:0px;" id="tablaAl" style="<?php echo $style;?>">
 			<label  id="numPedidoT">Número del albarán:</label>
 			<input  type="text" id="numPedido" name="numPedido" value="" size="5" placeholder='Num' data-obj= "numPedido" onkeydown="controlEventos(event)">
 			<a id="buscarPedido" class="glyphicon glyphicon-search buscar" onclick="buscarAdjunto('factura')"></a>
@@ -402,7 +365,6 @@ if ($idProveedor==0){
 		  </tr>
 		  <tr id="Row0" style=<?php echo $estiloTablaProductos;?>>  
 			<td id="C0_Linea" ></td>
-			
 			<td id="C0_Linea" ></td>
 			<td><input id="idArticulo" type="text" name="idArticulo" placeholder="idArticulo" data-obj= "cajaidArticulo" size="4" value=""  onkeydown="controlEventos(event)"></td>
 			<td><input id="Referencia" type="text" name="Referencia" placeholder="Referencia" data-obj="cajaReferencia" size="8" value="" onkeydown="controlEventos(event)"></td>
@@ -416,7 +378,6 @@ if ($idProveedor==0){
 			$i=0;
 			if (isset($productos)){
 				foreach (array_reverse($productos) as $producto){
-				
 					if($producto['numAlbaran']<>$numAdjunto){
 						echo $alb_html[$i];
 						$numAdjunto=$producto['numAlbaran'];
@@ -506,7 +467,6 @@ if ($idProveedor==0){
 			</table>
 		</div>
 </div>
-
 </form>
 </div>
 <?php // Incluimos paginas modales
@@ -534,7 +494,7 @@ include $RutaServidor.'/'.$HostNombre.'/plugins/modal/busquedaModal.php';
 		$('#divImportes').show();
 		<?php
 	}
-	if (count($albaranes)==0 & $comprobarAlbaran==2){
+	if (count($albaranes)==0 & $comprobarAlbaran==0){
 		?>
 		$('#tablaAl').hide();
 		<?php
@@ -554,6 +514,20 @@ include $RutaServidor.'/'.$HostNombre.'/plugins/modal/busquedaModal.php';
 		$("#Guardar").hide();
 		<?php
 	}
+    if ($_GET['estado']=="ver"){
+        ?>
+        $("#fila0").hide();	
+		$("#bCancelar").hide();
+		$("#bGuardar").hide();
+        $("#tabla").find('input').attr("disabled", "disabled");
+        $("#tabla").find('a').css("display", "none");
+        $("#suNumero").prop('disabled', true);
+        $("#fecha").prop('disabled', true);
+        $("#numPedido").css("display", "none");
+        $("#buscarPedido").css("display", "none");
+         $(".eliminar").css("display", "none");
+        <?php
+    }
 	?>
 </script>
 </body>

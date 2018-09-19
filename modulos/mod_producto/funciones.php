@@ -233,6 +233,38 @@ function  htmlTablaRefTiendas($crefTiendas){
 	return $html;
 } 
 
+function htmlTablaHistoricoPrecios($historicoPrecios){
+    $lineas=0;
+    $html =	 '<table id="thitorico" class="table table-striped">'
+			.'		<thead>'
+			.'			<tr>'
+			.'				<th>Fecha</th>'
+			.'				<th>Antes</th>'
+			.'				<th>Nuevo</th>'
+			.'				<th>NumDoc</th>'
+			.'				<th>De donde</th>'
+			.'				<th>Tipo</th>'
+            .'              <th></th>'
+			.'			</tr>'
+			.'		</thead>';
+            if(count($historicoPrecios)>0){
+                $lineas=$lineas+1;
+                $historicoPrecios=array_reverse ($historicoPrecios);
+                foreach ($historicoPrecios as $historico){
+                    $html.='<tr>'
+                            .'<td>'.date_format(date_create($historico['Fecha_Creacion']), 'd-m-Y').'</td>'
+                            .'<td>'.$historico['Antes'].'</td>'
+                            .'<td>'.$historico['Nuevo'].'</td>'
+                            .'<td>'.$historico['NumDoc'].'</td>'
+                            .'<td>'.$historico['Dedonde'].'</td>'
+                            .'<td>'.$historico['Tipo'].'</td>'
+                            .'<td><a class="glyphicon glyphicon-trash" id="eliminarHist_'.$lineas.'" onclick="EliminarHistorico('.$historico['id'].', this)"></a></td>'
+                    .'</tr>';
+                }
+            }
+            $html .= '</table>	';
+	return $html;
+}
 
 function htmlOptionIvas($ivas,$ivaProducto){
 	//  Objetivo :
@@ -476,13 +508,13 @@ function prepararandoPostProducto($array,$claseArticulos){
 function montarHTMLimprimir($id, $BDTpv, $dedonde, $CArticulo, $CAlbaran, $CProveedor){
 	$datosHistorico=$CArticulo->historicoCompras($id, $dedonde, "Productos");
 	$datosAlbaran=$CAlbaran->datosAlbaran($id);
-	$datosProveedor=$CProveedor->buscarProveedorId($datosAlbaran['idProveedor']);
+	$datosProveedor=$CProveedor->getProveedor($datosAlbaran['idProveedor']);
 	$imprimir['html']="";
 	$imprimir['cabecera']="";
 	$imprimir['html'] .='<p> ALBARÁN NÚMERO : '.$id.'</p>';
 	$date = date_create($datosAlbaran['Fecha']);
 	$imprimir['html'] .='<p> FECHA : '.date_format($date, 'Y-m-d').'</p>';
-	$imprimir['html'] .='<p> PROVEEDOR : '.$datosProveedor['nombrecomercial'].'</p>';
+	$imprimir['html'] .='<p> PROVEEDOR : '.$datosProveedor['datos'][0]['nombrecomercial'].'</p>';
 	$imprimir['html'] .='<br>';
 	
 	
@@ -512,13 +544,13 @@ function montarHTMLimprimirSinGuardar($id, $BDTpv, $dedonde, $CArticulo, $CAlbar
 	
 	$datosHistorico=$CArticulo->historicoCompras($id, $dedonde, "compras");
 	$datosAlbaran=$CAlbaran->datosAlbaran($id);
-	$datosProveedor=$CProveedor->buscarProveedorId($datosAlbaran['idProveedor']);
+	$datosProveedor=$CProveedor->getProveedor($datosAlbaran['idProveedor']);
 	$imprimir['html']="";
 	$imprimir['cabecera']="";
 	$imprimir['html'] .='<p> ALBARÁN NÚMERO : '.$id.'</p>';
 	$date = date_create($datosAlbaran['Fecha']);
 	$imprimir['html'] .='<p> FECHA : '.date_format($date, 'Y-m-d').'</p>';
-	$imprimir['html'] .='<p> PROVEEDOR : '.$datosProveedor['nombrecomercial'].'</p>';
+	$imprimir['html'] .='<p> PROVEEDOR : '.$datosProveedor['datos'][0]['nombrecomercial'].'</p>';
 	$imprimir['html'] .='<br>';
 	
 	$imprimir['html'] .='<table  WIDTH="100%">';
@@ -542,7 +574,7 @@ function montarHTMLimprimirSinGuardar($id, $BDTpv, $dedonde, $CArticulo, $CAlbar
 	return $imprimir;
 	
 }
-function productosSesion($idProducto){
+function productosSesion($idProducto, $seleccionar){
 	// @ Objetivo
 	// Guardar en la session los productos seleccionados.
 	// @ Parametro:
@@ -554,16 +586,42 @@ function productosSesion($idProducto){
 		// Si no existe lo creamos como un array
 		$_SESSION['productos_seleccionados'] = array();
 	}
-	if (!in_array($idProducto, $_SESSION['productos_seleccionados'])){
-		array_push($_SESSION['productos_seleccionados'], $idProducto);
-	}else{
-		foreach($_SESSION['productos_seleccionados'] as $key=>$prod){
-			if($prod==$idProducto){
-				$respuesta['prod']=$prod;
-				unset($_SESSION['productos_seleccionados'][$key]);
-			}
-		}
+    
+    switch ($seleccionar) {
+        case 'seleccionar':
+            if (!in_array($idProducto, $_SESSION['productos_seleccionados'])){
+                array_push($_SESSION['productos_seleccionados'], $idProducto);
+            }
+        break;
+        case 'NoSeleccionar':
+            foreach($_SESSION['productos_seleccionados'] as $key=>$prod){
+                    if($prod==$idProducto){
+                        $respuesta['prod']=$prod;
+                        unset($_SESSION['productos_seleccionados'][$key]);
+                    }
+                }
+        break;
+        default:
+            if (!in_array($idProducto, $_SESSION['productos_seleccionados'])){
+                array_push($_SESSION['productos_seleccionados'], $idProducto);
+            }else{
+                foreach($_SESSION['productos_seleccionados'] as $key=>$prod){
+                    if($prod==$idProducto){
+                        $respuesta['prod']=$prod;
+                        unset($_SESSION['productos_seleccionados'][$key]);
+                    }
+                }
 	}
+        break;
+        
+    }
+    
+    
+    
+    
+    
+    
+	
 	
 	if(count($_SESSION['productos_seleccionados'])>0){
 			$respuesta['Nitems']=count($_SESSION['productos_seleccionados']);
@@ -974,8 +1032,85 @@ function modalAutocompleteFamilias($familias, $idProducto){
         $html.='<option value="'.$familia['idFamilia'].'">'.$familia['familiaNombre'].'</option>';
     }
     $html.='</select></div>';
+    if($idProducto>0){
+         $html.='<p id="botonEnviar"></p>';
+    }else{
+         $html.='<p id="botonEnviar2"></p>';
+    }
+   
+    return $html;
+}
+
+function modalAutocompleteEstadoProductos($productos){
+    $stringProductos=implode(",", $productos);
     
-    $html.='<p id="botonEnviar"></p>';
+     $html="";
+    $html.='<input type="text" value="'.$stringProductos.'" id="idProductosModal" style="visibility:hidden">
+            <div class="ui-widget" id="divEstados">
+            <label for="tags">Estados: </label>
+            <select id="combobox" class="estados">
+                <option value="0"></option>
+                <option value="Activo">Activo</option>
+                <option value="Nuevo">Nuevo</option>
+                <option value="Temporal">Temporal</option>
+                <option value="Baja">Baja</option>
+                <option value="importado">importado</option>
+            </select>
+            ';
+        $html.='<p id="botonEnviarEstados"></p>';
+        return $html;
+}
+function selectFamilias($padre=0, $espacio, $array_familias, $conexion,$nombre_completo = ''){
+    
+        $sql = 'select idFamilia, familiaNombre, familiaPadre  FROM familias where familiaPadre='.$padre.' ORDER BY idFamilia ASC';
+        $res = $conexion->query($sql);
+       if($padre>0){
+           $espacio.='-';
+       }
+        
+        $total= $res->num_rows;
+      
+        if($total>0){
+            
+            while ($row = $res->fetch_assoc()) {
+                if (strlen($nombre_completo) >0){
+                    $nombre_completo = $nombre_completo.'&#187;'.$row['familiaNombre'];
+                } else {
+                    $nombre_completo = $row['familiaNombre'];
+                }
+                $array_familias[]=array(
+                                    "id" => $row['idFamilia'],
+                                    "name" => $espacio . $row['familiaNombre'],
+                                    "title" => $nombre_completo );
+               
+                 $array_familias= selectFamilias($row['idFamilia'], $espacio, $array_familias , $conexion,$nombre_completo);
+            }
+        }
+        
+        return $array_familias;
+}
+
+function htmlTipoProducto($tipo){
+        switch($tipo){
+            case 'unidad':
+             $html='<select name="tipo">
+                <option value="unidad" selected="">Unidad</option>
+                <option value="peso">Peso</option>
+                </select>';
+            break;
+            case 'peso':
+             $html='<select name="tipo">
+                <option value="peso" selected="">peso</option>
+                <option value="unidad">Unidad</option>
+                </select>';
+            break;
+            default: 
+             $html='<select name="tipo">
+                <option value="unidad" selected="">Unidad</option>
+                <option value="peso">Peso</option>
+                </select>';
+            break;
+        }
     return $html;
 }
 ?>

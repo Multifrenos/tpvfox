@@ -34,15 +34,21 @@ include_once $RutaServidor.$HostNombre.'/modulos/mod_producto/clases/ClaseProduc
                     
                     $modificarProducto = $ObjViruemart->modificarProducto($datos);
                     $respuesta['datos']=$datos;
-                    
+                     if($datosComprobaciones['estado']==1){
+                            $estado="Sin Publicar";
+                        }else{
+                            $estado="Publicado";
+                        }
+                    $modificarArticulosTienda=$CTArticulos->modificarEstadoWeb($datosComprobaciones['idProducto'], $datosComprobaciones['idTienda'], $estado);
+              
                     $respuesta['resul']= $modificarProducto;
                     if(strlen($modificarProducto['Datos']['error']) == 0){
                         $respuesta['htmlAlerta']='<div class="alert alert-success">
                                                     <strong>Success!</strong> Has modificados los datos del producto.
                                                 </div>';
-                    }else{
+                             }else{
                         $respuesta['htmlAlerta']='<div class="alert alert-danger">
-                                                    <strong>Danger!</strong> Error de sql : '.$modificarProducto['Datos']['consulta'].'
+                                                    <strong>Danger!</strong> Error de sql : '.$modificarProducto['Datos']['error'].' consulta: '.$modificarProducto['Datos']['consulta'].'
                                                 </div>';
                     }
                 }
@@ -62,23 +68,30 @@ include_once $RutaServidor.$HostNombre.'/modulos/mod_producto/clases/ClaseProduc
                 $datosComprobaciones['product_currency']=47;
                 $datos=json_encode($datosComprobaciones);
                 $addProducto = $ObjViruemart->addProducto($datos);
-                if($addProducto['Datos']['error']==""){
-                    if($addProducto['Datos']['id']>0){
-                        $addRegistro=$CTArticulos->addTiendaProducto( $datosComprobaciones['idProducto'], $datosComprobaciones['idTienda'], $addProducto['Datos']['id']);
+              
+                    if($addProducto['Datos']['idArticulo']>0){
+                        if($addProducto['Datos']['estado']==1){
+                            $estado="Sin Publicar";
+                        }else{
+                            $estado="Publicado";
+                        }
+                        $addRegistro=$CTArticulos->addTiendaProducto( $datosComprobaciones['idProducto'], $datosComprobaciones['idTienda'], $addProducto['Datos']['idArticulo'], $estado);
+                       
                         $respuesta['registro']=$addRegistro;
-                         $respuesta['htmlAlerta']='<div class="alert alert-success">
+                        $respuesta['htmlAlerta']='<div class="alert alert-success">
                                                     <strong>Success!</strong> Has añadido el producto a la web 
                                                     </div>';
                                                     
-                    }
-                }else{
-                    $respuesta['error']=$addProducto['Datos']['error'];
-                     $respuesta['htmlAlerta']='<div class="alert alert-danger">
-                                                    <strong>Danger!</strong> Error al añadir el producto a la web. '.$addProducto['Datos']['consulta'].'
+                    }else{
+                        $respuesta['error']=$addProducto['Datos']['error'];
+                        $respuesta['htmlAlerta']='<div class="alert alert-danger">
+                                                    <strong>Danger!</strong> Error al añadir el producto a la web. '.$addProducto['Datos']['error'].' Consulta: '.$addProducto['Datos']['consulta'].'
                                                 </div>';
-                }
+                    }
+               
                 
                 $respuesta['resul']= $addProducto;
+                
             }
            
            
@@ -124,6 +137,9 @@ include_once $RutaServidor.$HostNombre.'/modulos/mod_producto/clases/ClaseProduc
         if($enviarCorreo['Datos']['mailer']==true){
             $respuesta['mail']= 2;
             $modificarEstadoNotificacion = $ObjViruemart->modificarNotificacion($datos['idNotificacion']);
+            if(isset ($modificarEstadoNotificacion['Datos']['error'])){
+                $respuesta['errorModificacion']=$modificarEstadoNotificacion['Datos']['error'];
+            }
             $respuesta['modificacion']=$modificarEstadoNotificacion;
             $respuesta['numLinea']=$datos['numLinea'];
         }else{
@@ -132,6 +148,95 @@ include_once $RutaServidor.$HostNombre.'/modulos/mod_producto/clases/ClaseProduc
         }
         $respuesta['correo']= $enviarCorreo;
         break;
+        case 'subirProductosWeb':
+            $productosSeleccionados=$_SESSION['productos_seleccionados'];
+            $tiendaWeb=$_POST['idTienda'];
+            $productoEnWeb=array();
+            $productosError=array();
+            $contadorProductos=0;
+            foreach ($productosSeleccionados as $producto){
+                $idVirtuemart=0;
+                $datosProducto = $CTArticulos->GetProducto($producto);
+                if(count($datosProducto['ref_tiendas'])>0){
+                    foreach ($datosProducto['ref_tiendas'] as $refTienda){
+                        if ($refTienda['idVirtuemart'] >0){
+                            $idVirtuemart = $refTienda['idVirtuemart'];
+                        }
+                    }
+                    if($idVirtuemart==0){
+                        $stockMin=number_format($datosProducto['stocks']['stockMin'], 0, '.', '');
+                        $stockReal=number_format($datosProducto['stocks']['stockOn'], 0, '.', '');
+                        $stockWeb=$stockReal-$stockMin;
+                        $datos=array(
+                            'estado'=> 1,
+                            'referencia'=> $datosProducto['cref_tienda_principal'],
+                            'nombre'=> $datosProducto['articulo_name'],
+                            'codBarras'=> "",
+                            'precioSiva'=>number_format($datosProducto['pvpSiva'],2, '.', ''),
+                            'iva'=> $datosProducto['iva'],
+                            'id'=> $idVirtuemart,
+                            'alias'=>"",
+                            'idProducto'=>$datosProducto['idArticulo'],
+                            'idTienda'=>$tiendaWeb,
+                            'usuario'=>365,
+                            'peso'=>'KG',
+                            'stock'=>$stockWeb,
+                            'parametros'=>'min_order_level=""|max_order_level=""|step_order_level=""|product_box=""|',
+                            's_desc'=>"",
+                            'metadesc'=>"",
+                            'metakey'=>"",
+                            'title'=>"",
+                            'vendor'=>1,
+                            'override'=>0,
+                            'product_override_price'=>"0.00000",
+                            'product_discount_id'=>0,
+                            'product_currency'=>47
+                        );
+                        $datos=json_encode($datos);
+                        $addProducto = $ObjViruemart->addProducto($datos);
+                        if(isset($addProducto['Datos']['error'])){
+                            $respuesta['errores']=$addProducto;
+                            $respuesta['error']=$addProducto['Datos']['consulta'];
+                            array_push($productosError, $datosProducto['idArticulo']);
+                        }
+                        if($addProducto['Datos']['idArticulo']>0){
+                            $addRegistro=$CTArticulos->addTiendaProducto( $producto, $tiendaWeb, $addProducto['Datos']['idArticulo']);
+                            $respuesta['registro']=$addRegistro;
+                            $contadorProductos=$contadorProductos+1;
+                        }else{
+                            $respuesta['error']="error en el insert";
+                        }
+                        
+                    }else{
+                        $datos=array(
+                            'id'=>$datosProducto['idArticulo'],
+                            'nombre'=>$datosProducto['articulo_name']
+                        );
+                        array_push($productoEnWeb, $datos);
+                    }
+                }
+                $respuesta['datos']=$datosProducto;
+            }
+            $respuesta['contadorProductos']=$contadorProductos;
+            $respuesta['productosError']=$productosError;
+            $respuesta['productoEnWeb']=$productoEnWeb;
+            $respuesta['productos']=$productosSeleccionados;
+        break;
+        case 'contarProductosWeb':
+            $respuesta=$ObjViruemart->contarProductos();
+        break;
+       case 'actualizarProductosWeb':
+            $inicio=$_POST['inicio'];
+            $final=$_POST['final'];
+            
+            $productos=$ObjViruemart->productosInicioFinal($inicio, $final);
+            $respuesta['productos']=$productos;
+            
+       break;
+       case 'RestarStock':
+            $productos=$ObjViruemart->modificarStock($_POST['productos']);
+            $respuesta['productos']=$productos;
+       break;
     
     
     }

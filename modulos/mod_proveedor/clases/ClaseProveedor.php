@@ -99,14 +99,20 @@ class ClaseProveedor extends modelo{
 			$sql='SELECT Numalbpro , id FROM albprot WHERE  idProveedor ='.$idProveedor;
 		}else{
 			$sql='SELECT Numalbpro , id FROM albprot WHERE idProveedor ='.$idProveedor.' and `Fecha` BETWEEN 
-		"'.$fechaIni.'" and  "'.$fechaFin.'"';
+		 "'.$fechaIni.'" and  "'.$fechaFin.'"';
+         
+        //~ $sql='SELECT Numalbpro, id FROM albprot WHERE idProveedor='.$idProveedor.' and Fecha >= "'.$fechaIni.'" AND Fecha <= "'.$fechaFin.'"';
 		}
 		$albaranes=$this->consulta($sql);
 		if(isset($albaranes['error'])){
 			$respuesta=$albaranes;
 		}else{
 			$ids=implode(', ', array_column($albaranes['datos'], 'id'));
-			
+			if($ids==0){
+                $respuesta['error']=1;
+                $respuesta['consulta']='No hay resumen entre las fechas seleccionadas';
+            }else{
+            
 			$sql='SELECT	*,	SUM(nunidades) as totalUnidades	FROM	`albprolinea`	WHERE idalbpro  IN('.$ids.') and 
 			`estadoLinea` <> "Eliminado" GROUP BY idArticulo + costeSiva';
 			
@@ -134,9 +140,22 @@ class ClaseProveedor extends modelo{
 			}else{
 				$respuesta['desglose']=$desglose['datos'];
 			}
-		}
+            }
+        }
 		return $respuesta;
 	}
+    
+    public function todosProveedores(){
+        $sql='SELECT idProveedor, nombrecomercial FROM proveedores';
+        $consulta=$this->consulta($sql);
+        return $consulta;
+    }
+    public function buscarProductosProveedor($idProveedor){
+        $sql='SELECT * from articulosProveedores where idProveedor='.$idProveedor;
+        $consulta=$this->consulta($sql);
+        return $consulta;
+    }
+    
 }
 
 ?>

@@ -58,6 +58,43 @@ function eliminarConfiguracionModulo(idUsuario, modulo){
 	}
 }
 
+function copiarPermisosUsuario(){
+ 
+    
+    usuarioNuevo= $('#usuario').val();
+   
+    var parametros = {
+		"pulsado"    		: 'copiarPermisosUsuario',
+		"usuarioNuevo"			:usuarioNuevo
+		
+		
+		};
+    $.ajax({
+		data       : parametros,
+		url        : 'tareas.php',
+		type       : 'post',
+		beforeSend : function () {
+		console.log('********* Copiar los permisos de un usuario a otro  **************');
+		},
+		success    :  function (response) {
+				console.log('Respuesta Copiar los permisos de un usuario a otro ');
+				 var resultado = $.parseJSON(response);
+				
+                for(i=0;i<resultado.permisosUsuario.resultado.length;i++){
+                  
+                     permiso=resultado.permisosUsuario.resultado[i]['permiso'];
+                   
+                     if(permiso==1){
+                         $('.permiso_'+i).prop( "checked", true );
+                     }else{
+                         $('.permiso_'+i).prop( "checked", false );
+                     }
+                }
+				 
+		}	
+	});
+}
+
 
 
 

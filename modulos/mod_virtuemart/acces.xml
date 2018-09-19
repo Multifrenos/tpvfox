@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<modulo nombre="mod_virtuemart" descripcion="Virtuemart" permiso="0">
+    <vista nombre ="Importar_virtuemart.php" descripcion="Importar" permiso="0"></vista>
+</modulo>

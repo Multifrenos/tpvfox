@@ -128,14 +128,18 @@ class ClaseCliente extends modelo{
 			$sql='SELECT `Numticket`, id FROM `ticketst` WHERE `idCliente`='.$idCliente;
 		}else{
 			$sql='SELECT `Numticket`, id FROM `ticketst` WHERE `idCliente`='.$idCliente.' and `Fecha` BETWEEN 
-		"'.$fechaIni.'" and  "'.$fechaFin.'"';
+		"'.$fechaIni.'" and  "'.$fechaFin.' 23:00:00"';
 		}
-		
+		//~ error_log($sql);
 		$tickets=$this->consulta($sql);
 		if(isset($tickets['error'])){
 			$respuesta=$tickets;
 		}else{
 			$ids=implode(', ', array_column($tickets['datos'], 'id'));
+            if($ids==0){
+                $respuesta['error']=1;
+                $respuesta['consulta']='No existen ids entre estas fechas';
+            }else{
 			$sql='SELECT	*,	SUM(nunidades) as totalUnidades	FROM	`ticketslinea`	WHERE`idticketst` IN('.$ids.') and 
 			`estadoLinea` <> "Eliminado" GROUP BY idArticulo + `precioCiva`';
 			$productos=$this->consulta($sql);
@@ -162,6 +166,7 @@ class ClaseCliente extends modelo{
 			}else{
 				$respuesta['desglose']=$desglose['datos'];
 			}
+        }
 		}
 		return $respuesta;
 	}

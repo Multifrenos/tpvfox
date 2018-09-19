@@ -113,9 +113,24 @@
 				<h4> Clientes</h4>
 				<h5> Opciones para una selección</h5>
 				<ul class="nav nav-pills nav-stacked"> 
+                    <?php
+                     if($ClasePermisos->getAccion("crear")==1){
+                    ?>
 					<li><a href="#section1" onclick="metodoClick('AgregarCliente');">Añadir</a></li>
+                    <?php 
+                    }
+                    
+                    if($ClasePermisos->getAccion("modificar")==1){
+                        ?>
 					<li><a href="#section2" onclick="metodoClick('VerCliente');">Modificar</a></li>
+                    <?php 
+                }
+                if($ClasePermisos->getAccion("tarifa")==1){
+                    ?>
 					<li><a href="#" onclick="metodoClick('TarificarCliente');">Tarifa</a></li>
+                    <?php 
+                }
+                    ?>
 									<?php //metodoClick js case pulsado 
 									//agregarUsuario nos lleva a formulario usuario
 									//verUsuario si esta checkado nos lleva vista usuario de ese id
@@ -141,10 +156,12 @@
 				</form>
                  <!-- TABLA DE PRODUCTOS -->
 			<div>
-			<table class="table table-striped">
+			<table class="table table-bordered table-hover">
 				<thead>
 					<tr>
 						<th></th>
+                        <th></th>
+                        <th></th>
 						<th>ID</th>
 						<th>NOMBRE</th>
 						<th>RAZON SOCIAL</th>
@@ -164,6 +181,24 @@
 						<td class="rowUsuario">
 							<input type="checkbox" name="checkUsu<?php echo $checkUser;?>" value="<?php echo $cliente['idClientes'];?>">
 						</td>
+                        <td>
+                        <?php 
+                        if($ClasePermisos->getAccion("modificar")==1){
+                        ?>
+                            <a class="glyphicon glyphicon-pencil" href='./cliente.php?id=<?php echo $cliente['idClientes'];?>'>
+                        <?php 
+                        }
+                        ?>
+                        </td>
+                        <td>
+                        <?php 
+                        if($ClasePermisos->getAccion("ver")==1){
+                        ?>
+                        <a class="glyphicon glyphicon-eye-open" href='./cliente.php?id=<?php echo $cliente['idClientes'];?>&estado=ver'>
+                        <?php 
+                        }
+                        ?>
+                        </td>
 						<td><?php echo $cliente['idClientes']; ?></td>
 						<td><?php echo $cliente['Nombre']; ?></td>
 						<td><?php echo $cliente['razonsocial']; ?></td>

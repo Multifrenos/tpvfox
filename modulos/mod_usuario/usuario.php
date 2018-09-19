@@ -5,13 +5,13 @@
 		// Reinicio variables
 		include_once './../../inicial.php';
 		include_once $URLCom.'/head.php';
+       
 		include_once $URLCom.'/modulos/mod_usuario/funciones.php';
 		include_once $URLCom.'/modulos/mod_usuario/clases/claseUsuarios.php';
         include_once $URLCom.'/modulos/mod_incidencias/clases/ClaseIncidencia.php';
         include_once $URLCom.'/clases/ClasePermisos.php';
-      
-        //~ include ("./../mod_conexion/conexionBaseDatos.php");
-		//include ("./ObjetoRecambio.php");
+        $admin=0;
+       
 		$Cusuario=new ClaseUsuarios($BDTpv);
         $Cincidencias=new ClaseIncidencia($BDTpv);
 		if ($Usuario['estado'] === "Incorrecto"){
@@ -37,19 +37,19 @@
 		$estados[0]['valor'] = 'inactivo'; // Por defecto
 		$estados[1]['valor'] = 'activo';
 		// Obtenemos id
-		//~ print_r($_GET);
+		
 		
 		
 		if (isset($_GET['id'])) {
             
 			// Modificar Ficha Usuario
 			$id=$_GET['id']; // Obtenemos id para modificar.
-            $ClasePermisos=new ClasePermisos($id, $BDTpv);
-           
-            $permisosUsuario=$ClasePermisos->permisos['resultado'];
-             //~ echo '<pre>';
-            //~ print_r($permisosUsuario);
-            //~ echo '</pre>';
+            $Usuario=array('id'=>$id);
+            $permisosUsuario=$ClasePermisos->getPermisosUsuario($Usuario);
+            $permisosUsuario=$permisosUsuario['resultado'];
+           //~ echo '<pre>';
+           //~ print_r($permisosUsuario);
+           //~ echo '</pre>';
 			$UsuarioUnico = verSelec($BDTpv,$id,$tabla);
 			$titulo = "Modificar Usuario";
 			$passwrd= 'password'; // Para mostrar ***** en password
@@ -72,14 +72,17 @@
 					}
 				}
 				$configuracionesUsuario=$Cusuario->getConfiguracionModulo($id);
+                $usuarios=$Cusuario->todosUsuarios();
 				$incidenciasUsuario=$Cincidencias->incidenciasSinResolverUsuario($id);
 				$htmlConfiguracion=htmlTablaGeneral($configuracionesUsuario['datos'], $HostNombre, "configuracion");
                 $htmlInicidenciasDesplegable=htmlTablaIncidencias($incidenciasUsuario);
-                $htmlPermisosUsuario=htmlPermisosUsuario($permisosUsuario);
-                echo count($permisosUsuario);
-                //~ echo '<pre>';
-                //~ print_r($permisosUsuario);
-                //~ echo '</pre>';
+              
+                if($ClasePermisos->getAccion("permiso")==1){
+                    $admin=1;
+                }
+                
+                $htmlPermisosUsuario=htmlPermisosUsuario($permisosUsuario, $admin, $ClasePermisos, $usuarios);
+               
 			}
 		} else {
 			// Creamos ficha Usuario.
@@ -127,30 +130,23 @@
                 foreach($permisosUsuario as $permisos){
                      
                     if(isset($_POST['permiso_'.$i])){
-                           $permiso=1;
-                            //~ $mod=$ClasePermisos->modificarPermisoUsuario($permisos, $_POST['permiso_'.$i], $id);
-                            //~ echo '<pre>';
-                            //~ print_r($mod);
-                            //~ echo '</pre>';
+                        $permiso=1;
                     }else{
                         $permiso=0;
-                        //~ $mod=$ClasePermisos->modificarPermisoUsuario($permisos, 0, $id);
                     }
                     $mod=$ClasePermisos->modificarPermisoUsuario($permisos, $permiso, $id);
                     $i++;
-                    //~ echo '<pre>';
-                    //~ print_r($mod);
-                    //~ echo '</pre>';
                 }
-                $ClasePermisos=new ClasePermisos($id, $BDTpv);
-           
-            $permisosUsuario=$ClasePermisos->permisos['resultado'];
-                 $htmlPermisosUsuario=htmlPermisosUsuario($permisosUsuario);
                 
+                $Usuario=array('id'=>$id);
+                $permisosUsuario=$ClasePermisos->getPermisosUsuario($Usuario);
+                
+                 $permisosUsuario=$permisosUsuario['resultado'];
+                  if($ClasePermisos->getAccion("permiso")==1){
+                    $admin=1;
+                }
+                 $htmlPermisosUsuario=htmlPermisosUsuario($permisosUsuario, $admin,  $ClasePermisos);
 			}
-            //~ echo '<pre>';
-            //~ print_r($permisosUsuario);
-            //~ echo '</pre>';
 		}
 		
 		?>
@@ -158,9 +154,6 @@
 		<div class="container">
 				
 			<?php 
-			//~ echo '<pre>';
-			//~ print_r($_POST);
-			//~ echo '</pre>';
 			if (isset($mensaje) || isset($error)){   ?> 
 				<div class="alert alert-<?php echo $tipomensaje; ?>"><?php echo $mensaje ;?></div>
 				<?php 
@@ -255,9 +248,12 @@
                         $num=2;
                         $titulo='Incidencias Sin Resolver';
                         echo htmlPanelDesplegable($num, $titulo, $htmlInicidenciasDesplegable);
-                        $num=3;
-                        $titulo='Permisos';
-                        echo htmlPanelDesplegable($num, $titulo, $htmlPermisosUsuario);
+                      
+                        
+                            $num=3;
+                            $titulo='Permisos';
+                            echo htmlPanelDesplegable($num, $titulo, $htmlPermisosUsuario);
+                        
 						?>
 					</div>
 				</div>

@@ -10,16 +10,20 @@
         include_once $URLCom.'/controllers/Controladores.php';
         include_once $URLCom.'/modulos/mod_producto/clases/ClaseProductos.php';
         include_once ($URLCom .'/controllers/parametros.php');
-       
+        include_once $URLCom.'/modulos/mod_familia/clases/ClaseFamilias.php';
+        include_once $URLCom.'/modulos/mod_proveedor/clases/ClaseProveedor.php';
+        include_once $URLCom.'/modulos/mod_tienda/clases/ClaseTienda.php';
         $OtrosVarJS ='';
         $htmlplugins = array();
         $CTArticulos = new ClaseProductos($BDTpv);
-		$Controler = new ControladorComun; // Controlado comun..
-        
+
+        $CFamilia=new ClaseFamilias($BDTpv);
+        $CProveedor=new ClaseProveedor($BDTpv);
+        $CTienda=new ClaseTienda($BDTpv);
         $Controler = new ControladorComun; // Controlado comun..
         // Añado la conexion
         $Controler->loadDbtpv($BDTpv);
-
+        
         // Cargamos el plugin que nos interesa.
         if ($CTArticulos->SetPlugin('ClaseVehiculos') !== false){
             // Existe plguin ObjeVersiones por lo que cargamos css para ese plugin.
@@ -34,25 +38,26 @@
         //  Fin de carga de plugins.
 
         // Inicializo varibles por defecto.
-        $Tienda = $_SESSION['tiendaTpv'];
-        $Usuario = $_SESSION['usuarioTpv'];
-
+       
         $ClasesParametros = new ClaseParametros('parametros.xml');
         $parametros = $ClasesParametros->getRoot();
         // Cargamos configuracion modulo tanto de parametros (por defecto) como si existen en tabla modulo_configuracion 
         $conf_defecto = $ClasesParametros->ArrayElementos('configuracion');
         // Ahora compruebo productos_seleccion:
+        $botonSeleccion=0;
         $prod_seleccion = array('NItems' => 0, 'display' => '');
         if (isset($_SESSION['productos_seleccionados'])) {
             $prod_seleccion['Items'] = $_SESSION['productos_seleccionados'];
             $prod_seleccion['NItems'] = count($prod_seleccion['Items']);
+            
         }
         if ($prod_seleccion['NItems'] === 0) {
             // No hay productos seleccionados, display none y No en parametro filtro.
             $prod_seleccion['display'] = 'style="display:none"';
             $conf_defecto['filtro']->valor = 'No';
+            
         }
-       
+      
         // Obtenemos la configuracion del usuario o la por defecto
         $configuracion = $Controler->obtenerConfiguracion($conf_defecto, 'mod_productos', $Usuario['id']);
         // Compruebo que solo halla un campo por el que buscar por defecto.
@@ -89,6 +94,7 @@
             $CantidadRegistros = $CTArticulos->GetNumRows();
         }
         // --- Ahora envio a NPaginado la cantidad registros --- //
+       
         if ($prod_seleccion['NItems'] > 0 && $configuracion['filtro']->valor === 'Si') {
             $NPaginado->SetCantidadRegistros($prod_seleccion['NItems']);
         } else {
@@ -100,6 +106,7 @@
             // Queremos filtrar o no. 
             if ($configuracion['filtro']->valor === 'Si') {
                 if ($prod_seleccion['NItems'] > 0) {
+                    $botonSeleccion=1;
                     if (trim($filtro) !== '') {
                         $filtro .= ' AND (a.idArticulo IN (' . implode(',', $prod_seleccion['Items']) . '))';
                     } else {
@@ -107,26 +114,39 @@
                     }
                 }
             }
+            
             $productos = $CTArticulos->obtenerProductos($htmlConfiguracion['campo_defecto'], $filtro . $NPaginado->GetLimitConsulta());
         }
 
-
+       
+        
+        $todosProveedores= $CProveedor->todosProveedores();
+     
+         
+         if ($CTArticulos->SetPlugin('ClaseVirtuemart') !== false){
+            $ObjVirtuemart = $CTArticulos->SetPlugin('ClaseVirtuemart');
+            echo $ObjVirtuemart->htmlJava();
+            $tiendaWeb=$ObjVirtuemart->getTiendaWeb();
+         }
+        
+        // -------------- Obtenemos de parametros cajas con sus acciones ---------------  //
+		$VarJS = $Controler->ObtenerCajasInputParametros($parametros).$OtrosVarJS;
         // Añadimos a JS la configuracion
         echo '<script type="application/javascript"> '
         . 'var configuracion = ' . json_encode($configuracion);
         echo '</script>';
         ?>
-
+      
         <script src="<?php echo $HostNombre; ?>/jquery/jquery-ui.min.js"></script>
-   
-        <!-- Cargamos fuciones de modulo. -->
-        <script src="<?php echo $HostNombre; ?>/modulos/mod_producto/funciones.js"></script>
-        <?php // -------------- Obtenemos de parametros cajas con sus acciones ---------------  //
-			$VarJS = $Controler->ObtenerCajasInputParametros($parametros).$OtrosVarJS;
-         
-		?>	
+<!--
+        <script src="<?php echo $HostNombre; ?>/jquery/jquery-ui.js"></script>
+-->
+        <script src="<?php echo $HostNombre; ?>/lib/js/autocomplete.js"></script>   
+          <script src="<?php echo $HostNombre; ?>/modulos/mod_producto/funciones.js"></script>
         <script src="<?php echo $HostNombre; ?>/controllers/global.js"></script> 
         <script src="<?php echo $HostNombre; ?>/plugins/modal/func_modal_reutilizables.js"></script>
+         
+        <link rel="stylesheet" href="<?php echo $HostNombre;?>/jquery/jquery-ui.min.css" type="text/css">
         <script type="text/javascript">
             // Declaramos variables globales
             var checkID = [];
@@ -177,18 +197,63 @@ include_once $URLCom.'/modulos/mod_menu/menu.php';
                                 <li><a href="#section2" onclick="metodoClick('AgregarProducto');";>Añadir</a></li>
                                 <?php
                            }
+                            if($ClasePermisos->getAccion("modificar")==1){
                             ?>
                             <li><a href="#section2" onclick="metodoClick('VerProducto', 'producto');";>Modificar</a></li>
+                            <?php 
+                            }
+                            ?>
                         </ul>
                     </div>
                     <div class="nav productos_seleccionados" <?php echo $prod_seleccion['display']; ?>>
                         <h4>Seleccionados <span class="label label-default textoCantidad"><?php echo $prod_seleccion['NItems']; ?></span></h4>
                         <p>Opcion de seleccion:</p>
                         <ul class="nav nav-pills nav-stacked"> 
+                            <input type="checkbox" id="checkSeleccion" name="checkSeleccion" onclick="seleccionProductos()"> Selección Productos
+                            <?php 
+                             //~ if($ClasePermisos->getAccion("filtrarSeleccion")==1){
+                            ?>
+<!--
                             <li><a onclick="filtrarSeleccionProductos();">Filtrar Seleccion</a></li>
+-->
+                            <?php 
+                            //~ }
+                             if($ClasePermisos->getAccion("eliminarSeleccion")==1){
+                            ?>
                             <li><a onclick="eliminarSeleccionProductos();">Eliminar Selección</a></li>
+                            <?php
+                            }
+                            if($ClasePermisos->getAccion("imprimirEtiquetas")==1){
+                             ?>
                             <li><a href='ListaEtiquetas.php' onclick="metodoClick('ImprimirEtiquetas', 'listaEtiqueta');";>Imprimir Etiquetas</a></li>
-                            <li><a href='ListaMayor.php'>Imprimir Mayor</a></li>                                                
+                           <?php 
+                            }
+                            if($ClasePermisos->getAccion("imprimirMayor")==1){
+                           ?>
+                            <li><a href='ListaMayor.php'>Imprimir Mayor</a></li>  
+                            <?php 
+                            }
+                            if($ClasePermisos->getAccion("subirProductosWeb")==1){
+                            ?>      
+                            <li><a onclick="subirProductosWeb(<?php echo $tiendaWeb['idTienda'];?>);">Subir Productos Web</a></li>                                   
+                            <?php 
+                            }
+                            if($ClasePermisos->getAccion("agregarProductosFamilia")==1){
+                            ?>
+                             <li><a onclick="modalFamiliaProducto();">Guardar por familia</a></li>   
+                            <?php 
+                            }
+                             if($ClasePermisos->getAccion("eliminarProductos")==1){
+                             ?>     
+                                <li><a onclick="eliminarProductos(<?php echo $tiendaWeb['idTienda'];?>);">Eliminar Productos</a></li>        
+                            <?php 
+                            }
+                             if($ClasePermisos->getAccion("cambiarEstado")==1){
+                            ?> 
+                            <li><a onclick="modalEstadoProductos();">Cambiar estado productos</a></li>   
+                            <?php 
+                            }
+                            ?>             
                         </ul>
                     </div>
                     <div class ="nav">
@@ -222,19 +287,53 @@ include_once $URLCom.'/modulos/mod_menu/menu.php';
                     //enviamos por get palabras a buscar, las recogemos al inicio de la pagina
                     ?>
                     <form action="./ListaProductos.php" method="GET" name="formBuscar">
-                        <div class="form-group ClaseBuscar">
+                        <div class="form-group ClaseBuscar col-md-5">
                             <label>Buscar por:</label>
                             <select onchange="GuardarBusqueda(event);" name="SelectBusqueda" id="sel1"> <?php echo $htmlConfiguracion['htmlOption']; ?> </select>
-                            <input id="buscar" type="text" name="buscar" value="<?php echo $NPaginado->GetBusqueda(); ?>">
+                            <input id="buscar" type="text" name="buscar" size="10" value="<?php echo $NPaginado->GetBusqueda(); ?>">
                             <input type="submit" value="buscar">
+                        </div>
+                        <div id="familiasDiv" class="col-md-3">
+                            <div class="ui-widget">
+                             <label for="tags">Buscar por Familias:</label>
+                             <select id="combobox" class="familiasLista">
+                                <option value="0"></option>
+                                <option value="01">-Productos sin familia</option>
+                                 <?php 
+                                   $arbolfamilias=selectFamilias(0, '', array(), $BDTpv);
+                                   foreach($arbolfamilias as $familia){
+                                       echo '<option title ="'.$familia['title'].'" value="'.$familia['id'].'">'.$familia['name'].'</option>';
+                                   }
+                                
+                                 ?>
+                            </select>
+                            
+                            </div>
+                            <p id="botonEnviar"></p>
+                            
+                        </div>
+                         <div id="ProveedoresDiv" class="col-md-3">
+                             <div class="ui-widget">
+                                  <label for="tags">Buscar por Proveedores:</label>
+                                   <select id="combobox" class="proveedoresLista">
+                                        <option value="0"></option>
+                                       <?php 
+                                       
+                                       foreach ($todosProveedores['datos'] as $pro){
+                                            echo '<option value="'.$pro['idProveedor'].'">'.$pro['nombrecomercial'].'</option>';
+                                       }
+                                       ?>
+                                    </select>
+                            </div>
+                            <p id="botonEnviarPro"></p>
                         </div>
                     </form>
                     <!-- TABLA DE PRODUCTOS -->
                     <div>
-                        <table class="table table-bordered table-hover">
+                        <table class="table table-bordered table-hover tablaPrincipal">
                             <thead>
                                 <tr>
-                                    <th></th>
+                                    <th><input type="checkbox" id="checkUsuTodos" name="checkUsuTodos" onclick="seleccionarTodo()"></th>
                                     <th>ID</th>
                                     <th>PRODUCTO</th>
                                     <?php
@@ -253,6 +352,14 @@ include_once $URLCom.'/modulos/mod_menu/menu.php';
                                     <th>P.V.P</th>
                                     <th>Estado</th>
                                     <th>Reg.Stock</th>
+                                    <?php 
+                                    if(isset($tiendaWeb)){
+                                        ?>
+                                        <th>WEB</th>
+                                        <?php
+                                    }
+                                    ?>
+                                    
 
                                 </tr>
                             </thead>
@@ -271,16 +378,23 @@ include_once $URLCom.'/modulos/mod_menu/menu.php';
                                             $checked = "checked";
                                         }
                                     }
+                                    $textoFamilia="";
+                                    $familia=$CFamilia->familiaDeProducto($producto['idArticulo']);
+                                    if(isset($familia['datos'])){
+                                        foreach ($familia['datos'] as $nombreFamilia){
+                                            $textoFamilia.=' '.$nombreFamilia['nombreFamilia'];
+                                        }
+                                    }
                                     ?>
 
                                     <tr>
 
-                                        <td class="rowUsuario"><input type="checkbox" name="checkUsu<?php echo $checkUser; ?>" onclick="selecionarItemProducto(<?php echo $producto['idArticulo']; ?>, 'listaProductos')" value="<?php echo $producto['idArticulo']; ?>" <?php echo $checked; ?>>
+                                        <td class="rowUsuario"><input type="checkbox" id="checkUsu<?php echo $checkUser; ?>" name="checkUsu<?php echo $checkUser; ?>" onclick="selecionarItemProducto(<?php echo $producto['idArticulo']; ?>, 'listaProductos')" value="<?php echo $producto['idArticulo']; ?>" <?php echo $checked; ?>>
                                         </td>
                                         <?php
                                         $htmltd = '<td style="cursor:pointer" onclick="UnProductoClick(' . "'" . $producto['idArticulo'] . "'" . ');">';
                                         echo $htmltd . $producto['idArticulo'] . '</td>';
-                                        echo $htmltd . $producto['articulo_name'] . '</td>';
+                                        echo $htmltd . $producto['articulo_name'] . '<br><SUB>'.$textoFamilia.'</SUB></td>';
                                         if (MostrarColumnaConfiguracion($configuracion['mostrar_lista'], 'crefTienda') === 'Si') {
                                             $CTArticulos->ObtenerCodbarrasProducto($producto['idArticulo']);
                                             $codBarrasProd = $CTArticulos->GetCodbarras();
@@ -297,23 +411,58 @@ include_once $URLCom.'/modulos/mod_menu/menu.php';
                                         if (MostrarColumnaConfiguracion($configuracion['mostrar_lista'], 'codBarras') === 'Si') {
                                             $CTArticulos->ObtenerReferenciasTiendas($producto['idArticulo']);
                                             $refTiendas = $CTArticulos->GetReferenciasTiendas();
+                                            $tiendaPrincipal=$CTienda->tiendaPrincipal();
+                                            
                                             echo '<td>';
                                             if ($refTiendas) {
                                                 foreach ($refTiendas as $ref) {
-                                                    echo $ref['crefTienda'];
+                                                    if($ref['idTienda']==$tiendaPrincipal['datos'][0]['idTienda']){
+                                                        echo $ref['crefTienda'];
+                                                    }
+                                                    
                                                 }
                                             }
                                             echo '</td>';
                                         }
                                         ?>
 
-                                        <td><?php echo number_format($producto['ultimoCoste'], 2); ?></td>
-                                        <td><?php echo $producto['beneficio']; ?></td>
-                                        <td style="text-align:right;"><?php echo number_format($producto['pvpSiva'], 2); ?><small>€</small></td>
-                                        <td><?php echo $producto['iva']; ?></td>
+                                        <td><?= number_format($producto['ultimoCoste'], 2)?></td>
+                                        <td><?= $producto['beneficio']?></td>
+                                        <td style="text-align:right;"><?= number_format($producto['pvpSiva'], 2)?><small>€</small></td>
+                                        <td><?=$producto['iva']?></td>
                                         <td style="text-align:right;"><?php echo number_format($producto['pvpCiva'], 2); ?><small>€</small></td>
                                         <td><?php echo $producto['estado']; ?></td>
-                                        <td><button class="btn btn-sm boton-regularizar" data-idarticulo="<?php echo $producto['idArticulo']; ?>">regularizar</button></td>
+                                        <td>
+                                            <?php 
+                                             if($ClasePermisos->getAccion("regularizar")==1){
+                                            ?>
+                                            <button class="btn btn-sm boton-regularizar" data-idarticulo="<?php echo $producto['idArticulo']; ?>">regularizar</button>
+                                            <?php 
+                                        }
+                                            ?>
+                                            </td>
+                                            <?php 
+                                             if(isset($tiendaWeb)){
+                                            ?>
+                                        <td>
+                                        <?php
+                                        if(isset($refTiendas)){
+                                            foreach ($refTiendas as $ref){
+                                                if($ref['idVirtuemart']>0){
+                                                    $ObjVirtuemart = $CTArticulos->SetPlugin('ClaseVirtuemart');     
+                                                    $link=  $ObjVirtuemart->ruta_producto.$ref['idVirtuemart'];
+                                                    echo '  <a target="_blank" class="glyphicon glyphicon-globe" href="'.$link.'"></a>';
+                                                }
+                                            }
+                                        } 
+                                     
+                                        
+                                        ?>
+                                        
+                                        </td>
+                                        <?php 
+                                    }
+                                        ?>
                                     </tr>
 
                                     <?php
@@ -325,14 +474,12 @@ include_once $URLCom.'/modulos/mod_menu/menu.php';
                     </div>
                 </div>
             </div>
-            <?php
-            //~ echo '<pre>';
-            //~ print_r($_SESSION['productos_seleccionados']);
-            //~ echo '</pre>';
-            //~ echo count($_SESSION['productos_seleccionados']);
-            ?>
         </div>
         <!-- Modal -->
+        <?php // Incluimos paginas modales
+		echo '<script src="'.$HostNombre.'/plugins/modal/func_modal.js"></script>';
+		include $RutaServidor.'/'.$HostNombre.'/plugins/modal/busquedaModal.php';
+		?>
         <div id="regularizaStockModal" class="modal fade" role="dialog">
             <div class="modal-dialog">
                 <!-- Modal content-->
@@ -367,7 +514,62 @@ include_once $URLCom.'/modulos/mod_menu/menu.php';
                         <input type="hidden" id="articuloid" value="000" />
                     </form>
                 </div>
+                
             </div>
+            	
         </div>
+        
+        </div>
+        <div class="loader"></div>
+        <script>
+        <?php 
+        if($botonSeleccion==1){
+            ?>
+             $("#checkSeleccion").prop( "checked", true );
+            <?php
+        }else{
+            ?>
+             $("#checkSeleccion").prop( "checked", false );
+            <?php
+        }
+        
+        ?>
+        
+        
+        </script>
+         <style>
+#enlaceIcon{
+    height: 2.2em;
+}
+ .custom-combobox {
+    position: relative;
+    display: inline-block;
+  }
+  .custom-combobox-toggle {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    margin-left: -1px;
+    padding: 0;
+  }
+  .custom-combobox-input {
+    margin: 0;
+    padding: 5px 10px;
+  }
+  ul.ui-autocomplete {
+    z-index: 1050;
+}
+.loader {
+    position: fixed;
+    left: 0px;
+    top: 0px;
+    width: 100%;
+    height: 100%;
+    z-index: 9999;
+    background: url('<?php echo $HostNombre?>/css/img/loading.gif') 50% 50% no-repeat rgb(249,249,249);
+    opacity: .8;
+    display:none;
+}
+</style>
     </body>
 </html>

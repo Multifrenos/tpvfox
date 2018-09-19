@@ -1,6 +1,4 @@
 <?php 
-
-
 // Funciones para vista Recambio unico.
 function obtenerUsuarios($BDTpv) {
 	// Function para obtener usuarios y listarlos
@@ -157,7 +155,7 @@ function htmlPanelDesplegable($num_desplegable,$titulo,$body){
 function htmlTablaGeneral($datos, $HostNombre, $dedonde){
 	if(count($datos)>0){
 
-	$html=$resumen.'	<table class="table table-striped">
+	$html='	<table class="table table-striped">
 		<thead>
 			<tr>
 				
@@ -219,7 +217,8 @@ function htmlTablaIncidencias($incidenciasUsuario){
     return $html;
     
 }
-function htmlPermisosUsuario($permisosUsuario){
+function htmlPermisosUsuario($permisosUsuario, $admin, $ClasePermisos, $Usuarios){
+    //OBjetivo: Mostrar los inputs con los permisos anidados
     $permisos=array();
     $modulo="";
     $vista="";
@@ -228,37 +227,50 @@ function htmlPermisosUsuario($permisosUsuario){
     $permiso=0;
     $checked="";
     $i=0;
-   
-    foreach ($permisosUsuario as $permiso){
-        if($permiso['permiso']==1){
-            $checked="checked";
-        }else{
-             $checked="";
-        }
-       
-        if($modulo<>$permiso['modulo']){
-            $modulo=$permiso['modulo'];
-            $html.='<input type="checkbox" id="modulo_'.$i.'" value=1 name="permiso_'.$i.'" '.$checked.'><b>'.$permiso['modulo'].'</b><br>';
-        }else{
-            if($vista<>$permiso['vista']){
-            $vista=$permiso['vista'];
-            $html.='&nbsp;&nbsp;&nbsp;<input type="checkbox" value=1 id="vista_'.$i.'" name="permiso_'.$i.'" '.$checked.'>'.$vista.'<br>';
-            }else{
-                $accion=$permiso['accion'];
-                $html.='&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="checkbox" value=1 id="accion_'.$i.'" name="permiso_'.$i.'" '.$checked.'>'.$accion.'<br>';
-            }
-           
-        }
+    $bloquear="";
+    if($admin == 0){ //Si no es administrador tiene los inputs bloqueados
+        $bloquear='readonly="readonly" disabled';
+    }else{
+         $html.='Copiar permisos de : <select id="usuario">';
+         foreach ($Usuarios['datos'] as $usuario){
+             $html.='<option value="'.$usuario['id'].'">'.$usuario['username'].'</option>';
+         }
          
-         $i++;
+         $html.='</select> <a class="btn btn-primary" onclick="copiarPermisosUsuario()" >Copiar Permisos</a><br>';
+    }
+   
+   if(count($permisosUsuario)>0){
+        foreach ($permisosUsuario as $permiso){ //Recorremos todos los permisos
+            if($permiso['permiso']==1){ //Si el permiso es 1 es input está marcado
+                $checked="checked";
+            }else{
+                 $checked="";
+            }
+            
+            if($modulo<>$permiso['modulo']){
+                $modulo=$permiso['modulo'];
+                //De todos vamos obteniendo la descripción del acces
+                $descripcion=$ClasePermisos->ObtenerDescripcion($permiso['modulo'], $permiso);
+                $html.='<input type="checkbox" id="modulo_'.$i.'" value=1 class="permiso_'.$i.'" name="permiso_'.$i.'" '.$checked.' '.$bloquear.'><b>'.$descripcion.'</b><br>';
+            }else{
+                if($vista<>$permiso['vista']){
+                   
+                $vista=$permiso['vista'];
+                $descripcion=$ClasePermisos->ObtenerDescripcion($permiso['vista'], $permiso);
+                $html.='&nbsp;&nbsp;&nbsp;<input type="checkbox" value=1 class="permiso_'.$i.'" id="vista_'.$i.'" name="permiso_'.$i.'" '.$checked.' '.$bloquear.'>'.$descripcion.'<br>';
+                }else{
+                    $accion=$permiso['accion'];
+                    $descripcion=$ClasePermisos->ObtenerDescripcion($permiso['accion'], $permiso);
+                    $html.='&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="checkbox" class="permiso_'.$i.'" value=1 id="accion_'.$i.'" name="permiso_'.$i.'" '.$checked.' '.$bloquear.'>'.$descripcion.'<br>';
+                }
+               
+            }
+             
+             $i++;
         
-        
-        
-        
-        
-        
-        
-        
+        }
+    }else{
+         $html='<div class="alert alert-info">Este Usuario no tiene permisos</div>';
     }
     
     

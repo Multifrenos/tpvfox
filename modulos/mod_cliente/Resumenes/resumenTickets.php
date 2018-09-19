@@ -86,8 +86,8 @@
 		<script src="<?php echo $HostNombre; ?>/modulos/mod_cliente/funciones.js"></script>
 		<script src="<?php echo $HostNombre; ?>/modulos/mod_incidencias/funciones.js"></script>
 		<?php
-        include_once  $URLCom.'/head.php';
-       
+        //~ include_once  $URLCom.'/head.php';
+         include_once $URLCom.'/modulos/mod_menu/menu.php';
 				
 				if (isset($errores)){
 				foreach($errores as $error){
@@ -188,7 +188,12 @@
 						<?php 
 						$totalProductos=0;
 						if(isset($arrayNums['productos'])){
+                              foreach ($arrayNums['productos'] as $key => $row) {
+                                    $aux[$key] = $row['cdetalle'];
+                                }
+                                array_multisort($aux, SORT_ASC, $arrayNums['productos']);
 							foreach($arrayNums['productos'] as $producto){
+                            
 								$precio=$producto['totalUnidades']*$producto['precioCiva'];
 								echo '<tr>'
 								. '<td>'.$producto['cdetalle'].'</td>'

@@ -37,6 +37,10 @@ include_once $URLCom.'/clases/Proveedores.php';
 $CProveedor=new Proveedores($BDTpv);
 include_once $URLCom.'/modulos/mod_familia/clases/ClaseFamilias.php';
 $CFamilia=new ClaseFamilias($BDTpv);
+include_once $URLCom.'/modulos/mod_proveedor/clases/ClaseProveedor.php';
+$CProveedor=new ClaseProveedor($BDTpv);
+include_once $URLCom.'/clases/Proveedores.php';
+$CProveedorGen=new Proveedores($BDTpv);
 switch ($pulsado) {
 
 	case 'HtmlLineaCodigoBarras';
@@ -83,7 +87,7 @@ switch ($pulsado) {
 		$id=$_POST['id'];
 		$dedonde="Recalculo";
 		$nombreTmp=$dedonde."recalculo.pdf";
-		//~ $htmlImprimir['cabecera']="";
+		
 		if ($_POST['bandera']==1){
 			$htmlImprimir=montarHTMLimprimir($id, $BDTpv, $dedonde, $CArticulo, $CAlbaran, $CProveedor);
 		}else{
@@ -109,7 +113,8 @@ switch ($pulsado) {
 	
 	case 'productosSesion':
 		$respuesta=array();
-		$respuesta=productosSesion($_POST['id']);
+        
+		$respuesta=productosSesion($_POST['id'], $_POST['seleccionar']);
 		
 	break;
 	
@@ -134,36 +139,143 @@ switch ($pulsado) {
 		$respuesta=$comprobacion;
 	break;
     case 'modalFamiliaProducto':
-        $idProducto=$_POST['idProducto'];
+        if($_POST['idProducto']==""){
+            $idProducto=0;
+        }else{
+             $idProducto=$_POST['idProducto'];
+        }
+       
         $familias=$CFamilia->todoslosPadres();
         $modal=modalAutocompleteFamilias($familias['datos'], $idProducto);
         $respuesta['familias']=$familias;
         $respuesta['html']=$modal;
     break;
+    case 'modalEstadoProductos':
+     $productos=$_SESSION['productos_seleccionados'];
+        $modal=modalAutocompleteEstadoProductos($productos);
+        $respuesta['html']=$modal;
+    break;
+    
     case 'buscarNombreFammilia':
-    //~ $idProducto=$_POST['idProducto'];
-    //~ $idFamilia=$_POST['idfamilia'];
-    //~ $add=$CFamilia->guardarProductoFamilia($idProducto, $idFamilia);
     $idFamilia=$_POST['idfamilia'];
     $idProducto=$_POST['idProducto'];
-    $comprobar=$CFamilia->comprobarRegistro($idProducto, $idFamilia);
-    $respuesta['comprobar']=$comprobar;
-    if(isset($comprobar['datos'])){
-        $respuesta['error']=1;
+    if($idProducto==0){
+        
+        $productosEnFamilia=array();
+        $productos=$_SESSION['productos_seleccionados'];
+        $respuesta['productos']=$productos;
+        $contadorProductos=0;
+        foreach ($productos as $idProducto){
+             $comprobar=$CFamilia->comprobarRegistro($idProducto, $idFamilia);
+             $respuesta['datos']=$comprobar['datos'];
+            if(isset($comprobar['datos'])){
+               array_push($productosEnFamilia, $idProducto);
+            }else{
+               $addFamilia=$CFamilia->guardarProductoFamilia($idProducto, $idFamilia);
+               if($addFamilia['error']){
+                    $respuesta['error']=$addFamilia;
+               }else{
+                   $contadorProductos=$contadorProductos+1;
+               }
+            }
+        }
+            $respuesta['contadorProductos']=$contadorProductos;
+            $respuesta['productosEnFamilia']=$productosEnFamilia;
     }else{
-        $nombreFamilia=$CFamilia->buscarPorId($idFamilia);
-        $nuevaFila = '<tr>'
-				. '<td><input type="hidden" id="idFamilias_'.$idFamilia
-				.'" name="idFamilias_'.$idFamilia.'" value="'.$idFamilia.'">'
-				.$idFamilia.'</td>'
-				.'<td>'.$nombreFamilia['datos'][0]['familiaNombre'].'</td>'
-				.'<td><a id="eliminar_'.$idFamilia
-				.'" class="glyphicon glyphicon-trash" onclick="eliminarFamiliaProducto(this)"></a>'
-				.'</td>'.'</tr>';
-        $respuesta['html']=$nuevaFila;
-        $respuesta['nombre']=$nombreFamilia;
+        $comprobar=$CFamilia->comprobarRegistro($idProducto, $idFamilia);
+        $respuesta['comprobar']=$comprobar;
+        if(isset($comprobar['datos'])){
+            $respuesta['error']=1;
+        }else{
+            $nombreFamilia=$CFamilia->buscarPorId($idFamilia);
+            $nuevaFila = '<tr>'
+                    . '<td><input type="hidden" id="idFamilias_'.$idFamilia
+                    .'" name="idFamilias_'.$idFamilia.'" value="'.$idFamilia.'">'
+                    .$idFamilia.'</td>'
+                    .'<td>'.$nombreFamilia['datos'][0]['familiaNombre'].'</td>'
+                    .'<td><a id="eliminar_'.$idFamilia
+                    .'" class="glyphicon glyphicon-trash" onclick="eliminarFamiliaProducto(this)"></a>'
+                    .'</td>'.'</tr>';
+            $respuesta['html']=$nuevaFila;
+            $respuesta['nombre']=$nombreFamilia;
+        }
     }
+    
     break;
+    case 'buscarProductosDeFamilia':
+        $respuesta=array();
+        if($_POST['idfamilia']=="01"){
+             $productos=$CFamilia->buscarProductosSinFamilias();
+        }else{
+            $productos=$CFamilia->buscarProductosFamilias($_POST['idfamilia']);
+        }
+       
+        $idsProductos=array();
+        foreach ($productos['datos'] as $producto){
+            array_push($idsProductos, $producto['idArticulo']);
+        }
+        $respuesta['Productos']=$idsProductos;
+    break;
+    case 'buscarProductosProveedor':
+        $respuesta=array();
+        $productos=$CProveedor->buscarProductosProveedor($_POST['idProveedor']);
+        $idsProductos=array();
+        foreach ($productos['datos'] as $producto){
+            
+            array_push($idsProductos, $producto['idArticulo']);
+        }
+        $respuesta['Productos']=$idsProductos;
+    break;
+    case 'eliminarHistorico':
+        $idHistorico=$_POST['idHistorico'];
+        $eliminar=$NCArticulo->EliminarHistorico($idHistorico);
+        $respuesta=$eliminar;
+    break;
+    case 'eliminarProductos':
+        $respuesta=array();
+        $tiendaWeb=$_POST['idTiendaWeb'];
+        $productos=$_SESSION['productos_seleccionados'];
+        $productosNoEliminados=array();
+        $productosEliminados=array();
+        foreach ($productos as $idProducto){
+            $carga=$NCArticulo->GetProducto($idProducto);
+            $datosProducto=$NCArticulo->ArrayPropiedades();
+            $datos=array(
+                'nombre'=>$datosProducto['articulo_name'],
+                'id'=>$idProducto
+                );
+            if($datosProducto['estado']=="Baja"){
+                $comprobacionesEliminar=$NCArticulo->ComprobarEliminar($idProducto, $tiendaWeb);
+                if($comprobacionesEliminar['bandera']==1){
+                    array_push( $productosNoEliminados, $datos);
+                }else{
+                    
+                    array_push( $productosEliminados, $datos);
+                    productosSesion($idProducto);
+                }
+                if(isset($comprobacionesEliminar['error'])){
+                    $respuesta['error']=$comprobacionesEliminar['consulta'];
+                }
+                
+            }else{
+                array_push( $productosNoEliminados, $datos);
+            }
+           
+        }
+        $respuesta['NoEliminados']= $productosNoEliminados;
+        $respuesta['Eliminados']=$productosEliminados;
+    break;
+    case 'cambiarEstadoProductos':
+    $respuesta=array();
+        $productos=$_POST['productos'];
+        $estado=$_POST['estado'];
+         $modEstado=$NCArticulo->modificarVariosEstados($estado, $productos);
+         $respuesta['consulta']=$modEstado;
+        $respuesta['productos']=$productos;
+        $respuesta['estado']=$estado;
+    break;
+    
+   
 }
 echo json_encode($respuesta);
 ?>

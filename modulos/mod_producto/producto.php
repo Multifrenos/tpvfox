@@ -42,7 +42,7 @@
 		// Obtenemos los datos del id, si es 0, quiere decir que es nuevo.
 		$Producto = $CTArticulos->GetProducto($id);
 		
-		
+	
 				
 		if (isset($preparados['comprobaciones'])){
 			foreach ($preparados['comprobaciones'] as $comprobacion){
@@ -99,17 +99,18 @@
             }
           
 		}  
-		if ($CTArticulos->SetPlugin('ClaseVirtuemart') !== false){
-			$datosWebCompletos=array();
+		if ($CTArticulos->SetPlugin('ClaseVirtuemart') !== false && $ClasePermisos->getAccion("VerProductoWeb") == 1){
+            // Sino tiene permisos ya no hacemos consulta a la web.
+            $datosWebCompletos=array();
 			// Creo el objeto de plugin Virtuemart.
 			$ObjVirtuemart = $CTArticulos->SetPlugin('ClaseVirtuemart');     
 			// Cargo caja_input de parametros de plugin de virtuemart.
 			$ClasesParametrosPluginVirtuemart = new ClaseParametros($RutaServidor . $HostNombre . '/plugins/mod_producto/virtuemart/parametros.xml');
 			$parametrosVirtuemart = $ClasesParametrosPluginVirtuemart->getRoot();
 			$OtrosVarJS = $Controler->ObtenerCajasInputParametros($parametrosVirtuemart);
-			if ($idVirtuemart>0 ){ 
+            if ($idVirtuemart>0 ) { 
 			// Obtengo se conecta a la web y obtiene los datos de producto cruzado.
-				$datosWebCompletos=$ObjVirtuemart->datosTiendaWeb($idVirtuemart,  $Producto['iva']);
+				$datosWebCompletos=$ObjVirtuemart->datosTiendaWeb($idVirtuemart,  $Producto['iva'], $ClasePermisos->getAccion("VerProductoWeb"));
 				// Esto para comprobaciones iva... ??? Es correcto , si esto se hace JSON, no por POST.
 				if(isset($datosWebCompletos['comprobarIvas']['comprobaciones'])){
 					$Producto['comprobaciones'][]= $datosWebCompletos['comprobarIvas']['comprobaciones'];
@@ -122,11 +123,13 @@
 							$htmlVehiculos = $vehiculos['Datos']['html'];
 						}
 				 }
+                $tiendaWeb=$ObjVirtuemart->getTiendaWeb();
+                $comprobarEstado=$CTArticulos->modificarEstadoWeb($id, $datosWebCompletos['datosProductoWeb']['datosWeb']['estado'], $tiendaWeb['idTienda']);
 			}else{
 				if($id>0){
 					if($ObjVirtuemart->getTiendaWeb()!=false){
 						$tiendaWeb=$ObjVirtuemart->getTiendaWeb();
-						$datosWebCompletos['datosProductoWeb']['html']=$ObjVirtuemart->htmlDatosVacios($id, $tiendaWeb['idTienda']);
+						$datosWebCompletos['datosProductoWeb']['html']=$ObjVirtuemart->htmlDatosVacios($id, $tiendaWeb['idTienda'], $ClasePermisos->getAccion("VerProductoWeb"));
 					}
 				}
 				 
@@ -137,14 +140,15 @@
 				
 		
 		// ==========		Montamos  html que mostramos. 			============ //
-		$htmlIvas = htmlOptionIvas($ivas,$Producto['iva']);
-		$htmlCodBarras = htmlTablaCodBarras($Producto['codBarras']);
-		$htmlProveedoresCostes = htmlTablaProveedoresCostes($proveedores_costes['proveedores']);
-		$htmlFamilias =  htmlTablaFamilias($Producto['familias'], $id);
-		$htmlEstadosProducto =  htmlOptionEstados($posibles_estados_producto,$Producto['estado']);
-		$htmlReferenciasTiendas = htmlTablaRefTiendas($Producto['ref_tiendas']);
+            $htmlIvas = htmlOptionIvas($ivas,$Producto['iva']);
+            $htmlCodBarras = htmlTablaCodBarras($Producto['codBarras']);
+            $htmlProveedoresCostes = htmlTablaProveedoresCostes($proveedores_costes['proveedores']);
+            $htmlFamilias =  htmlTablaFamilias($Producto['familias'], $id);
+            $htmlEstadosProducto =  htmlOptionEstados($posibles_estados_producto,$Producto['estado']);
+            $htmlReferenciasTiendas = htmlTablaRefTiendas($Producto['ref_tiendas']);
+            $htmlHistoricoPrecios=htmlTablaHistoricoPrecios($Producto['productos_historico']);
+            $htmlTipo=htmlTipoProducto($Producto['tipo']);
 		?>
-		
 		<!-- Creo los objetos de input que hay en tpv.php no en modal.. esas la creo al crear hmtl modal -->
 		<?php // -------------- Obtenemos de parametros cajas con sus acciones ---------------  //
             $VarJS = $Controler->ObtenerCajasInputParametros($parametros).$OtrosVarJS;
@@ -167,7 +171,15 @@
 		?>
 		<?php 
 			echo  'var ivas='.json_encode($ivas).';';
-		?>
+		
+        if($ClasePermisos->getAccion("modificarStock")==1){ 
+            ?>
+            $("#stockmin").removeAttr("readonly");
+        <?php 
+        }
+        ?>
+            
+   
 		</script>
         
 
@@ -197,23 +209,31 @@
 			<h2 class="text-center"> <?php echo $titulo;?></h2>
 			<form action="" method="post" name="formProducto" onkeypress="return anular(event)">
 			<div class="col-md-12">
-				<div class="col-md-12 btn-toolbar">
+				<div class="col-md-12 ">
 					<a class="text-ritght" href="./ListaProductos.php">Volver Atrás</a>
-					<input type="submit" value="Guardar">
+					<input type="submit" value="Guardar" class="btn btn-primary">
 				</div>
 				<div class="col-md-6 Datos">
 					<?php // si es nuevo mostramos Nuevo ?>
-					<div class="col-md-7">
+					<div class="col-md-6">
 						<h4>Datos del producto con ID:<?php echo $id?></h4>
 					</div>
-					<div class="col-md-5">
+					<div class="col-md-3">
 					<label>Estado
 						<select id="idEstado" name="estado" onchange="">
 							<?php echo $htmlEstadosProducto; ?>
 						</select>
 					</label>
+                    
 					<input type="text" id="id" name="id" size="10" style="display:none;" value="<?php echo $id;?>" >
 					</div>
+                    <div class="col-md-3">
+                        <label class="control-label " > Tipo:</label>
+                        <?php 
+                            echo $htmlTipo;
+                        ?>
+                    </div>
+                 
 					<div class="col-md-12">
 						<div class="form-group col-md-3 ">	
 							<label class="control-label " > Referencia:</label>
@@ -285,8 +305,9 @@
                                 <label class="control-label-inline " > Mínimo:</label>
                                 <input type="text" id="stockmin" size="5" 
                                        name="stockmin" placeholder="Stock mínimo" 
+                                       readonly="readonly" 
                                        data-obj= "cajaStockMin" 
-                                       readonly="readonly" value="<?php echo number_format($Producto['stocks']['stockMin'], 2, '.', ''); ?>"   > 
+                                        value="<?php echo number_format($Producto['stocks']['stockMin'], 2, '.', ''); ?>"   > 
                             </div>
                             <div class="col-md-4 ">	
                                 <label class="control-label " > Máximo:</label>
@@ -308,32 +329,29 @@
 					 <div class="panel-group">
 						<!-- Inicio collapse de CobBarras --> 
 						<?php 
-						$num = 1 ; // Numero collapse;
-						$titulo = 'Códigos de Barras';
-						echo htmlPanelDesplegable($num,$titulo,$htmlCodBarras);
-						?>
-						<!-- Inicio collapse de Proveedores --> 
-						<?php 
-						$num = 2 ; // Numero collapse;
-						$titulo = 'Proveedores - Costes';
-						echo htmlPanelDesplegable($num,$titulo,$htmlProveedoresCostes);
-						?>
-						<!-- Inicio collapse de Familias --> 
-						<?php 
-						$num = 3; // Numero collapse;
-						$titulo = 'Familias';
-						echo htmlPanelDesplegable($num,$titulo,$htmlFamilias);
-						?>
-						<!-- Inicio collapse de Tiendas --> 
-						<?php 
-						$num = 4; // Numero collapse;
-						$titulo = 'Productos en otras tiendas.';
-						echo htmlPanelDesplegable($num,$titulo,$htmlReferenciasTiendas);
-						
-                        
-                        
-                    	?>
+                      
+                            $num = 1 ; // Numero collapse;
+                            $titulo = 'Códigos de Barras';
+                            echo htmlPanelDesplegable($num,$titulo,$htmlCodBarras);
+                     
+                            $num = 2 ; // Numero collapse;
+                            $titulo = 'Proveedores - Costes';
+                            echo htmlPanelDesplegable($num,$titulo,$htmlProveedoresCostes);
+                     
+                            $num = 3; // Numero collapse;
+                            $titulo = 'Familias';
+                            echo htmlPanelDesplegable($num,$titulo,$htmlFamilias);
+                       
+                            $num = 4; // Numero collapse;
+                            $titulo = 'Productos en otras tiendas.';
+                            echo htmlPanelDesplegable($num,$titulo,$htmlReferenciasTiendas);
+                      
+                            $num = 5; // Numero collapse;
+                            $titulo = 'Historico Precios.';
+                            echo htmlPanelDesplegable($num,$titulo,$htmlHistoricoPrecios);
+                       
                     
+                    ?>
 						<!-- Inicio collapse de Referencias Tiendas --> 
 
 					<!-- Fin de panel-group -->
@@ -344,6 +362,7 @@
 			</div>
             </form>
             <?php 
+             if($ClasePermisos->getAccion("VerProductoWeb")==1){
                         if(isset($datosWebCompletos['datosProductoWeb']['html'])){
                                echo $datosWebCompletos['datosProductoWeb']['html']; 
                         }
@@ -367,7 +386,7 @@
                                             echo $datosWebCompletos['htmlLinkVirtuemart'];
                                     }
                                     
-                                    
+            }
                                      ?>
                                 </div>
                          </div>
@@ -378,7 +397,46 @@
 		include $RutaServidor.'/'.$HostNombre.'/plugins/modal/busquedaModal.php';
 		?>
         </div> 
+     <script type="text/javascript">
+        <?php 
+        if($ClasePermisos->getAccion("modificarStock")==1){ 
+            ?>
+            $("#stockmin").removeAttr("readonly");
+            $("#stockmax").removeAttr("readonly");
+           
+        <?php 
+        }
+        if($ClasePermisos->getAccion("verCodBarras")==0){
+            ?>
+            $("#tcodigo a").hide();
+            $("#tcodigo input").attr("readonly","readonly");
+              <?php
+        }
+        if($ClasePermisos->getAccion("verProveedores")==0){
+            ?>
+             $("#tproveedor a").hide();
+            $("#tproveedor input").attr("readonly","readonly");
+            <?php
+        } 
+        if($ClasePermisos->getAccion("verFamilias")==0){
+            ?>
+              $("#tfamilias a").hide();
+            <?php
+        }
+         if($ClasePermisos->getAccion("verProductosTienda")==0){
+             ?>
+              $("#tproveedor a").hide();
+            <?php
+         }
+           if($ClasePermisos->getAccion("verHistoricoPrecios")==0){
+              ?>
+                $("#thitorico a").hide();
+              <?php 
+           }
+        ?>
+    </script> 
         <style>
+           
 #enlaceIcon{
     height: 2.2em;
 }

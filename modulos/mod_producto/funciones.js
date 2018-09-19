@@ -858,7 +858,7 @@ function seleccionProveedor(dedonde,idproveedor){
 
 }
 
-function selecionarItemProducto(id, dedonde=""){
+function selecionarItemProducto(id, dedonde="", seleccionar=""){
 	// @ Objetivo:
 	// 		Al seleccionar un check comprueba si existes productos_seleccionado de session.
 	//	si existe lo elimina y si no lo añade.
@@ -874,7 +874,8 @@ function selecionarItemProducto(id, dedonde=""){
 	console.log('Selecciono Item de producto, lo añadimos a session');
 	var parametros = {
 		"pulsado"    	: 'productosSesion',
-		"id"			:id
+		"id"			:id,
+        "seleccionar": seleccionar
 		
 	};
 	$.ajax({
@@ -900,10 +901,14 @@ function selecionarItemProducto(id, dedonde=""){
 						$(".productos_seleccionados").css("display", "block");
 						$(".textoCantidad").html(resultado.Nitems);
 					}else{
-						location.href=dedonde+".php";
+                        if(seleccionar==""){
+                            location.href=dedonde+".php";
+                        }
+						
 					}
 					
 				}
+                  $("#checkSeleccion").prop( "checked", false );
 				 
 		}	
 	});
@@ -933,6 +938,7 @@ function eliminarSeleccionProductos(){
 		}	
 	});
 }
+
 
 function UnProductoClick(id){
 	// @ Objetivo:
@@ -1044,7 +1050,7 @@ function ajaxRegularizar(parametros, callback) {
         }
     });
 }
-function modalFamiliaProducto(idProducto){
+function modalFamiliaProducto(idProducto=""){
     var parametros = {
         pulsado: 'modalFamiliaProducto',
         idProducto: idProducto
@@ -1069,23 +1075,120 @@ function modalFamiliaProducto(idProducto){
 		}	
 	});
 }
+function modalEstadoProductos(){
+     var parametros = {
+        pulsado: 'modalEstadoProductos'
+    }
+      $.ajax({
+		data       : parametros,
+		url        : 'tareas.php',
+        type       : 'post',
+		beforeSend : function () {
+		console.log('********* envio para mostrar el modal de modificar estado productos **************');
+		},
+		success    :  function (response) {
+				console.log('Respuesta de mostrar modal de modificar estado productos ');
+				var resultado = $.parseJSON(response);
+				var titulo = 'Modificar Producto ';
+                abrirModal(titulo,resultado.html);
+               
+				//~ setTimeout(function(){
+                        $( ".custom-combobox-input" ).focus();
+                       
+                //~ },3000);
+		}	
+	});
+}
+
 $( function() {
      $('#busquedaModal').on('shown.bs.modal', function() {
       //@Objetivo: llamar a la librería autocomplete 
     $( ".familias" ).combobox({
         select : function(event, ui){ 
-            var idProducto= $( "#idProductoModal" ).val();
-             var botonhtml='<button class="btn btn-primary" onclick="guardarProductoFamilia('+ui.item.value+', '+idProducto+')">Guardar</button>';
-          $('#botonEnviar').html(botonhtml);   
+            
+        var idProducto= $( "#idProductoModal" ).val();
+          
+        var botonhtml='<button class="btn btn-primary" onclick="guardarProductoFamilia('+ui.item.value+', '+idProducto+')">Guardar</button>';
+         if(idProducto==0){
+            $('#botonEnviar2').html(botonhtml);  
+         }else{
+             $('#botonEnviar').html(botonhtml);  
+         }
+          
+          
+         
+        },
+       
+       
+    });
+     $( ".estados" ).combobox({
+        select : function(event, ui){ 
+        var idProductos= $( "#idProductosModal" ).val();  
+        var botonhtml='<button class="btn btn-primary" onclick="modificarEstadoProductos('+"'"+ui.item.value+"'"+', '+"'"+idProductos+"'"+')">Guardar</button>';
+         
+            $('#botonEnviarEstados').html(botonhtml);  
+         
+          
+          
+         
         },
        
        
     });
 });
+
+      //@Objetivo: llamar a la librería autocomplete 
+     if( $("select").hasClass("familiasLista")){
+        $( ".familiasLista" ).combobox({
+            select : function(event, ui){ 
+                //~ var idProducto= $( "#idProductoModal" ).val();
+                 var botonhtml='<a class="btn btn-primary" onclick="buscarProductosFamilia('+ui.item.value+')">Buscar</a>';
+               $('#botonEnviar').html(botonhtml);   
+            },
+           
+           
+        });
+     $( ".proveedoresLista" ).combobox({
+            select : function(event, ui){ 
+                //~ var idProducto= $( "#idProductoModal" ).val();
+                 var botonhtml='<a class="btn btn-primary" onclick="buscarProductosProveedor('+ui.item.value+')">Buscar</a>';
+               $('#botonEnviarPro').html(botonhtml);   
+            },
+           
+           
+        });
+    }
      $( "#toggle" ).on( "click", function() {
         $( "#combobox" ).toggle();
     });
   } );
+  
+function modificarEstadoProductos(estado, productos){
+    var parametros = {
+        pulsado: 'cambiarEstadoProductos',
+        estado: estado,
+        productos:productos
+    }
+    $.ajax({
+		data       : parametros,
+		url        : 'tareas.php',
+        type       : 'post',
+		beforeSend : function () {
+		console.log('********* envio para cambiar el estado a los productos de sesion **************');
+		},
+		success    :  function (response) {
+				console.log('Respuesta de cambiar el estado a los productos de sesion ');
+				var resultado = $.parseJSON(response);
+				console.log(resultado);
+                if(resultado['consulta']['Consulta']['error']){
+                    alert(resultado['consulta']['Consulta']['consulta']);
+                }else{
+                    cerrarPopUp();
+                    location.reload(true);
+                }
+		}	
+	});
+}
 function guardarProductoFamilia(idfamilia, idProducto){
     var parametros = {
         pulsado: 'buscarNombreFammilia',
@@ -1103,16 +1206,185 @@ function guardarProductoFamilia(idfamilia, idProducto){
 				console.log('Respuesta de guardar el registro de productos familia');
               
                 var resultado = $.parseJSON(response);
-                if(resultado.error==1){
-                    alert("No puedes añadir esa familia al producto ya que ya está añadida");
+                console.log(resultado);
+                if(idProducto==0){
+                    if(resultado.productosEnFamilia.length>0){
+                       alert("Producto que YA ESTABAN : "+JSON.stringify(resultado.productosEnFamilia));
+                    }
+                    if(resultado.error){
+                        alert(resultado.error);
+                    }
+                    alert("Productos guardados en familia: "+resultado.contadorProductos );
+                     cerrarPopUp();
                 }else{
-                      cerrarPopUp();
-                      var nuevafila = resultado['html'];
-                    $("#tfamilias").prepend(nuevafila);
+                    if(resultado.error==1){
+                        alert("No puedes añadir esa familia al producto ya que ya está añadida");
+                    }else{
+                          cerrarPopUp();
+                          var nuevafila = resultado['html'];
+                        $("#tfamilias").prepend(nuevafila);
+                    }
                 }
+                
 				//cerrar modal y añadir la fila
 				 
 		}	
 	});
     
+}
+function buscarProductosFamilia(idFamilia){
+   
+        var parametros = {
+            pulsado: 'buscarProductosDeFamilia',
+            idfamilia:idFamilia
+        }
+        $.ajax({
+            data       : parametros,
+            url        : 'tareas.php',
+            type       : 'post',
+            beforeSend : function () {
+            console.log('********* envio para buscar los productos de las familias **************');
+            },
+            success    :  function (response) {
+                    console.log('Respuesta de buscar productos de la familia');
+                   
+                    var resultado = $.parseJSON(response);
+                    productos=resultado['Productos'];
+                       for(i=0;i<productos.length; i++){
+                           selecionarItemProducto(productos[i], "listaProductos");
+                           $("#botonEnviar").hide();
+                       }
+            }	
+        });
+    
+    
+}
+function buscarProductosProveedor(idProveedor){
+      var parametros = {
+            pulsado: 'buscarProductosProveedor',
+            idProveedor:idProveedor
+        }
+        $.ajax({
+            data       : parametros,
+            url        : 'tareas.php',
+            type       : 'post',
+            beforeSend : function () {
+            console.log('********* envio para buscar los productos de un proveedor **************');
+            },
+            success    :  function (response) {
+                    console.log('Respuesta de buscar productos de un proveedor');
+                   
+                    var resultado = $.parseJSON(response);
+                    productos=resultado['Productos'];
+                       for(i=0;i<productos.length; i++){
+                          
+                           selecionarItemProducto(productos[i], "listaProductos");
+                       }
+            }	
+        });
+}
+function EliminarHistorico(idHistorico, e){
+   var mensaje = confirm("¿Estás seguro que quieres eliminar este registro de historico?");
+	if (mensaje) {
+    
+    var parametros = {
+        pulsado: 'eliminarHistorico',
+        idHistorico:idHistorico
+    }
+     $.ajax({
+            data       : parametros,
+            url        : 'tareas.php',
+            type       : 'post',
+            beforeSend : function () {
+            console.log('********* eliminar registro indicado de historico precio **************');
+            },
+            success    :  function (response) {
+                    console.log('Respuesta de eliminar historico precio');
+                   
+                    var resultado = $.parseJSON(response);
+                    console.log (resultado);
+                   //QUEDA ELIMINAR LINEA
+                   if(resultado.error==0){
+                       alert("Error de sql: "+resultado.consulta);
+                   }else{
+                        var padre=e.parentNode; 
+                        var abuelo=padre.parentNode; 
+                        var bisa=abuelo.parentNode; 
+                        bisa.removeChild(abuelo);
+                   }
+                   
+                  
+                     
+            }	
+        });
+    }
+    
+}
+
+function eliminarProductos(idTiendaWeb=0){
+     var mensaje = confirm("¿Estás seguro que quieres eliminar los productos seleccionado?");
+	if (mensaje) {
+        $('.loader').show();
+         var parametros = {
+             idTiendaWeb: idTiendaWeb,
+            pulsado: 'eliminarProductos'
+        }
+          $.ajax({
+            data       : parametros,
+            url        : 'tareas.php',
+            type       : 'post',
+            beforeSend : function () {
+                console.log('********* eliminar productos **************');
+            },
+            success    :  function (response) {
+                    console.log('Respuesta de eliminar productos');
+                   
+                    var resultado = $.parseJSON(response);
+                    console.log (resultado);
+                    $('.loader').hide();
+                   if(resultado.Eliminados.length>0){
+                       alert("Se han eliminado: "+JSON.stringify(resultado.Eliminados));
+                   }
+                   if(resultado.NoEliminados.length>0){
+                       alert("No se han eliminado: "+ JSON.stringify(resultado.NoEliminados));
+                   }
+                   if(resultado.error){
+                       alert("Error de sql: "+resultado.error);
+                   }else{
+                       location.reload(true);
+                   }
+                   
+                  
+                     
+            }	
+        });
+    }
+}
+function seleccionarTodo(){
+    console.log("entre en seleccionar todo");
+   for (i=1;i<41;i++){
+        if( $("#checkUsuTodos").prop('checked') ) {
+            $("#checkUsu"+i).prop( "checked", true );
+             selecionarItemProducto($("#checkUsu"+i).val(), "listaProductos", "seleccionar");
+        }else{
+            selecionarItemProducto($("#checkUsu"+i).val(), "listaProductos", "NoSeleccionar");
+            $("#checkUsu"+i).prop( "checked", false );
+        }
+   }
+} 
+
+function seleccionProductos(){
+    if( $("#checkSeleccion").prop('checked') ) {
+        filtrarSeleccionProductos();
+        $("#checkSeleccion").prop( "checked", true );
+    }else{
+         busquedaSinCheck();
+        //~ eliminarSeleccionProductos();
+        $("#checkSeleccion").prop( "checked", false );
+    }
+}
+function busquedaSinCheck(){
+    configuracion.filtro.valor='No';
+    AjaxGuardarConfiguracion();
+    location.href="ListaProductos.php";
 }

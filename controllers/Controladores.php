@@ -404,6 +404,18 @@ class ControladorComun
 	function loadDbtpv($BD){
 		$this->BDTpv = $BD;
 	}
+    
+    public static function insertTd($contenido=''){
+        //@Objetivo:Cubrir los td sin tantas comprobaciones. Está función la ponemos llamar sin inicializar la clase
+        //@Contenido: es el contenido que queremos poner en el td, lo inicializamos
+        //por si no existe.
+        
+        $resultado='<td></td>';
+        if(strlen($contenido)>0){
+            $resultado='<td>'.$contenido.'</td>';
+        }
+        return $resultado;
+    }
 	
 }
 	

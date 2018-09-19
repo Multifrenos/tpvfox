@@ -28,8 +28,8 @@
  * */
 
 
-include ($RutaServidor.$HostNombre.'/clases/ClaseTablaArticulos.php');
-include ($RutaServidor.$HostNombre.'/plugins/plugins.php');
+include_once ($RutaServidor.$HostNombre.'/clases/ClaseTablaArticulos.php');
+require_once ($RutaServidor.$HostNombre.'/plugins/plugins.php');
 class ClaseProductos extends ClaseTablaArticulos{
 	public $view ; //string ruta de la vista que estamos
 	public $idTienda ; // Obtenemos el idTienda de la clase extendida.
@@ -179,11 +179,11 @@ class ClaseProductos extends ClaseTablaArticulos{
 		$this->idTienda= $id;
 	}
     
-	public function addTiendaProducto($idProducto, $idTienda, $idVirtuemart){
+	public function addTiendaProducto($idProducto, $idTienda, $idVirtuemart, $estado){
         // @Objetivo
         // Añadir a la tabla articulosTiendas la relacion con otra tienda.
         $sql='INSERT INTO articulosTiendas (idArticulo, idTienda, idVirtuemart, estado)VALUES
-        ('.$idProducto.', '.$idTienda.', '.$idVirtuemart.', "Activo")';
+        ('.$idProducto.', '.$idTienda.', '.$idVirtuemart.', "'.$estado.'")';
         error_log($sql);
         $respuesta = $this->Consulta_insert_update($sql);
         $respuesta['consulta'] = $sql;
@@ -305,9 +305,9 @@ class ClaseProductos extends ClaseTablaArticulos{
 		// 				-> errores (array) con tipo,mensaje,dato.
 		$fecha_ahora= date("Y-m-d H:i:s");   // Obtenemos la fecha sistema 
 		// ---- 		Insertamos un producto nuevo en tabla articulos 		----- //
-		$sqlArticulo = 'INSERT INTO `articulos`(iva, articulo_name, estado,ultimoCoste, fecha_creado,beneficio) VALUES ("'
+		$sqlArticulo = 'INSERT INTO `articulos`(iva, articulo_name, estado,ultimoCoste, fecha_creado,beneficio, tipo) VALUES ("'
 						.$datos['iva'].'","'.$datos['articulo_name'].'","'.$datos['estado'].'","'
-						.$datos['coste'].'","'.$fecha_ahora.'","'.$datos['beneficio'].'")';
+						.$datos['coste'].'","'.$fecha_ahora.'","'.$datos['beneficio'].'", "'.$datos['tipo'].'")';
 		// De momento inserto ultimoCoste, pero no deberíamos... :-) ya que no se compro.	
 		$respuesta = array();
 		$DB = parent::GetDb();
@@ -599,11 +599,11 @@ class ClaseProductos extends ClaseTablaArticulos{
 				$datosProveedores[$k]['estado'] = 'Activo';
 				$datosProveedores[$k]['se_hizo'] = 'nuevo';
 				// Montamos Sql insert ya que es nuevo.
-				$sql = 'INSERT INTO `articulosProveedores`(`idArticulo`, `idProveedor`,'
-						.' `crefProveedor`, `coste`, `fechaActualizacion`, `estado`) VALUES ('
-						.$datos['idArticulo'].','.$datos['idProveedor'].',"'
-						.$datos['creProveedor'].'","'.$datos['coste'].'",NOW(),"'
-						.'Tarifa'.'")';
+				$sql = 'INSERT INTO `articulosProveedores`(`idArticulo`, `idProveedor`, `crefProveedor`,
+                 `coste`, `fechaActualizacion`, `estado`) VALUES ('.$datos['idArticulo'].','
+                 .$datos['idProveedor'].',"'.$datos['crefProveedor'].'","'.$datos['coste']
+                 .'",NOW(),"'.'Tarifa'.'")';
+               
 				$comprobaciones['nuevo'][]=$this->Consulta_insert_update($sql);
 			} else {
 				// Es modificado montamos sql update
@@ -661,7 +661,8 @@ class ClaseProductos extends ClaseTablaArticulos{
 								'iva'					=> $this->iva,
 								'estado'				=> $this->estado,
 								'ultimoCoste'			=> number_format($this->ultimoCoste,2),
-								'beneficio'				=> $this->beneficio
+								'beneficio'				=> $this->beneficio,
+                                'tipo'                  =>$this->tipo
 								);
 		// Obtenemos id de proveedor principal
 		if (gettype($this->proveedor_principal) === 'array'){
@@ -675,7 +676,8 @@ class ClaseProductos extends ClaseTablaArticulos{
 							'iva'						=> $DatosPostProducto['iva'],
 							'estado'					=> $DatosPostProducto['estado'],
 							'ultimoCoste'				=> $DatosPostProducto['ultimoCoste'],
-							'beneficio'					=> $DatosPostProducto['beneficio']
+							'beneficio'					=> $DatosPostProducto['beneficio'],
+                            'tipo'                      => $DatosPostProducto['tipo']
 							);
 		
 		// Obtenemos id de proveedor principal
@@ -687,7 +689,7 @@ class ClaseProductos extends ClaseTablaArticulos{
 			// Montamos sql para guardar...
 			$d =$datosgenerales_post;
 			$sql =	'UPDATE `articulos` SET `iva`="'.$d['iva'].'",`idProveedor`="'
-					.$d['idProveedor'].'",`articulo_name`="'.$d['articulo_name'].'",`beneficio`="'.$d['beneficio'].'",`estado`="'.$d['estado'].'",`fecha_modificado`=NOW(),`ultimoCoste`="'.$d['ultimoCoste'].'" WHERE idArticulo = '.$d['idArticulo'];
+					.$d['idProveedor'].'",`articulo_name`="'.$d['articulo_name'].'",`beneficio`="'.$d['beneficio'].'",`estado`="'.$d['estado'].'",`fecha_modificado`=NOW(),`ultimoCoste`="'.$d['ultimoCoste'].'", tipo="'.$d['tipo'].'" WHERE idArticulo = '.$d['idArticulo'];
 			$comprobaciones['datos_generales']=$this->Consulta_insert_update($sql);
 		}
 		return $comprobaciones;
@@ -809,12 +811,77 @@ class ClaseProductos extends ClaseTablaArticulos{
 		}
 		return $respuesta;
 	}
+    
+    public function contarProductosTpv(){
+       $respuesta = array();
+       $sql='SELECT count(idArticulo) as cantTpv from articulos';
+       $resp = $this->Consulta($sql);
+       if ($resp['NItems'] > 0){
+            $respuesta = $resp['Items']; 
+       }else {
+			$error = array ( 'tipo'=>'success',
+							 'dato' => '',
+							 'mensaje' => 'No se encontró ningun articulo.'
+							 );
+			$respuesta['error'] = $error;
+		}
+		return $respuesta;
+    }
 	
+    public function productosEnTpvNoWeb($idTienda){
+         $respuesta = array();
+         $sql='select count(idArticulo) as cantArticulo FROM articulosTiendas WHERE idTienda !='.$idTienda.' and 
+         idArticulo NOT in (select idArticulo from articulosTiendas where idTienda='.$idTienda.')';
+         $resp = $this->Consulta($sql); 
+         if ($resp['NItems'] > 0){
+            $respuesta = $resp['Items']; 
+           }else {
+                $error = array ( 'tipo'=>'success',
+                                 'dato' => $sql,
+                                 'mensaje' => 'No se encontró nungun producto.'
+                                 );
+                $respuesta['error'] = $error;
+            }
+		return $respuesta;
+    }
+    
+    public function productosTienda($idTienda){
+         $respuesta = array();
+         $sql='select count(idArticulo) as cantArticulo from articulosTiendas where idTienda='.$idTienda;
+          $resp = $this->Consulta($sql); 
+         if ($resp['NItems'] > 0){
+            $respuesta = $resp['Items']; 
+           }else {
+                $error = array ( 'tipo'=>'success',
+                                 'dato' => $sql,
+                                 'mensaje' => 'No se encontró nungun producto.'
+                                 );
+                $respuesta['error'] = $error;
+            }
+		return $respuesta;
+    }
+    
+    public function comprobarIdWebTpv($idTienda, $idProducto){
+        $respuesta = array();
+         $sql='select idArticulo from articulosTiendas
+          where idTienda='.$idTienda.' and idVirtuemart='.$idProducto;
+          $resp = $this->Consulta($sql); 
+         if ($resp['NItems'] > 0){
+            $respuesta = $resp['Items']; 
+           }else {
+                $error = array ( 'tipo'=>'success',
+                                 'dato' => $sql,
+                                 'mensaje' => 'No se encontró nungun producto.'
+                                 );
+                $respuesta['error'] = $error;
+            }
+		return $respuesta;
+    }
 	public function comprobacionCamposObligatoriosProducto($datos){
 		// Objetivo es comprobar que los datos enviados son correctos.
 		// @ Parametros
 		// 		$datos = (array asociativo) 
-		$campos_obligatorios = array('articulo_name','estado','iva','pvpSiva','pvpCiva','coste','beneficio');
+		$campos_obligatorios = array('articulo_name','estado','iva','pvpSiva','pvpCiva','coste','beneficio', 'tipo');
 		$comprobaciones = array(); // Lo utilizo para guardar resultado de comprobaciones o errores.
 		// ---- 	Comprobamos que existe campo y tiene dato correcto.		--------- //
 		foreach ($campos_obligatorios as $key){
@@ -888,6 +955,11 @@ class ClaseProductos extends ClaseTablaArticulos{
 		
 		return $consulta;
 	}
+    public function EliminarHistorico($id){
+        $sql='DELETE FROM historico_precios WHERE id='.$id;
+        $consulta =$this->Consulta_insert_update($sql);
+        return $consulta;
+    }
 	
 	public function precioCivaRecalculado(){
 		// @ Objetivo
@@ -906,7 +978,205 @@ class ClaseProductos extends ClaseTablaArticulos{
 		return $precio_recalculado;
 		
 	}
-	// Fin de clase.
+    
+    public function ComprobarEliminar($id, $idTienda){
+        //Comprobar que el id del producto no este en ninguna linea de albaranes
+        $sql=array();
+        $sql[1]='select count(id) as cant from albprolinea where idArticulo='.$id;
+        $sql[2]='select count(id) as cant from pedprolinea where idArticulo='.$id;
+        $sql[3]='select count(id) as cant from facprolinea where idArticulo='.$id;
+        $sql[4]='select count(id) as cant from ticketslinea where idArticulo='.$id;
+        $sql[5]='select count(id) as cant from albclilinea where idArticulo='.$id;
+        $sql[6]='select count(id) as cant from pedclilinea where idArticulo='.$id;
+        $sql[7]='select count(id) as cant from facclilinea where idArticulo='.$id;
+        $sql[8]='select count(idArticulo) as cant from articulosTiendas where idArticulo='.$id.' and idTienda='.$idTienda;
+        $bandera=0;
+        foreach ($sql as $consulta){
+             $items = parent::Consulta($consulta);
+             if($items['Items'][0]['cant']>0){
+                 $bandera=1;
+                 break;
+             }
+        }
+        if($bandera==0){
+            $sql=array();
+            $sql[1]='delete from articulos where idArticulo='.$id;
+            $sql[2]='delete from articulosTiendas where idArticulo='.$id;
+            $sql[3]='delete from articulosClientes where idArticulo='.$id;
+            $sql[4]='delete from articulosCodigoBarras where idArticulo='.$id;
+            $sql[5]='delete from articulosFamilias where idArticulo='.$id;
+            $sql[6]='delete from articulosPrecios where idArticulo='.$id;
+            $sql[7]='delete from articulosProveedores where idArticulo='.$id;
+            $sql[8]='delete from articulosStocks where idArticulo='.$id;
+            foreach ($sql as $consulta){
+                $eliminar =$this->Consulta_insert_update($consulta);
+                if(isset($eliminar['error'])){
+                    $resultado['consulta']=$eliminar['consulta'];
+                    $resultado['error']=$eliminar['error'];
+                }
+            }
+        }
+        $resultado['bandera']=$bandera;
+        
+        return $resultado;
+        
+       
+    }
+    
+    
+    public function modificarProductoTPVWeb($datos){
+       
+        $sql='UPDATE articulos SET iva="'.floatval ($datos['iva']).'", articulo_name="'.$datos['nombre'].'", 
+        fecha_modificado="'.date("Y-m-d H:i:s").'" where idArticulo='.$datos['id'];
+        $respuesta = array();
+		$DB = parent::GetDb();
+		$smt = $DB->query($sql);
+        if($DB->connect_errno){
+                $respuesta['error']=$sql;
+        }else{
+            $sql='UPDATE articulosPrecios SET pvpSiva="'.floatval ($datos['precioSiva']).'" , pvpCiva="'.floatval ($datos['precioCiva']).'" where idArticulo='.$datos['id'];
+            $smt = $DB->query($sql);
+            if($DB->connect_errno){
+                $respuesta['error']=$sql;
+            }
+            if($datos['refTienda']<>""){
+            switch ($datos['optRefWeb']){
+                case '1':
+                    $sql='UPDATE `articulosTiendas` SET `crefTienda`="'.$datos['refTienda'].'" where idTienda='.$datos['tiendaWeb'].' and idArticulo='.$datos['id'];
+                    
+                break;
+                case '2':
+                     $sql='UPDATE `articulosTiendas` SET `crefTienda`="'.$datos['tiendaPrincipal'].'" where idTienda='.$datos['tiendaWeb'].' and idArticulo='.$datos['id'];
+                break;
+                case 3:
+                    $sql='UPDATE `articulosTiendas` SET `crefTienda`="'.$datos['refTienda'].'" where idTienda='.$datos['tiendaWeb'].' and idArticulo='.$datos['id'].
+                    '  UPDATE `articulosTiendas` SET `crefTienda`="'.$datos['refTienda'].'" where idTienda='.$datos['tiendaPrincipal'].' and idArticulo='.$datos['id'];
+                break;
+            }
+            $smt = $DB->query($sql);
+            if($DB->connect_errno){
+                $respuesta['error']=$sql;
+            }
+        }
+            if(count($datos['codBarras']>0)){
+                $sql='DELETE FROM `articulosCodigoBarras` WHERE idArticulo='.$datos['id'];
+                $smt = $DB->query($sql);
+                        if($DB->connect_errno){
+                            $respuesta['error']=$sql;
+                        }
+                foreach($datos['codBarras'] as $cod){
+                    if($cod<>""){
+                         $sql='INSERT INTO `articulosCodigoBarras`(`idArticulo`, `codBarras`) VALUES ('.$datos['id'].',"'.$cod.'")';
+                    $smt = $DB->query($sql);
+                        if($DB->connect_errno){
+                            $respuesta['error']=$sql;
+                        }
+                    }
+                    
+                }
+            }
+        
+    }
+        return $respuesta;
+    }
+    
+    public function addProductoWebTPV($datos){
+        $fecha_ahora= date("Y-m-d H:i:s");   
+		$sqlArticulo = 'INSERT INTO `articulos`(iva, articulo_name, estado,ultimoCoste, fecha_creado,beneficio) VALUES ("'
+						.$datos['iva'].'","'.$datos['nombre'].'","'.$datos['estado'].'","'
+						.$datos['costePromedio'].'","'.$fecha_ahora.'","'.$datos['beneficio'].'")';
+		
+		$respuesta = array();
+		$DB = parent::GetDb();
+		$smt = $DB->query($sqlArticulo);
+		if ($smt) {
+			$respuesta['idInsert'] = $DB->insert_id;
+            $id=$respuesta['idInsert'];
+			// Hubo resultados
+		} else {
+			// Quiere decir que hubo error en la consulta.
+			$respuesta['error'] = $DB->connect_errno;
+			$error = array ( 'tipo'=>'danger',
+						 'mensaje' =>'Error al insertar en tabla Articulos '.json_encode($respuesta['error']),
+						 'dato' => $sqlArticulo
+					);
+			$comprobaciones['insert_articulos'] = $error;
+		}
+        if (!isset($respuesta['error'])){
+            if($datos['refTienda']<>""){
+            switch ($datos['optRefWeb']){
+                case '1':
+                    $sql='INSERT INTO `articulosTiendas`(`idArticulo`, `idTienda`, `crefTienda`, 
+                    `idVirtuemart`, `estado`) VALUES ('.$id.','.$datos['tiendaWeb'].',"'.$datos['refTienda'].'",
+                    '.$datos['id'].', "'.$datos['estadoWeb'].'")';
+                break;
+                case '2':
+                     $sql='INSERT INTO `articulosTiendas`(`idArticulo`, `idTienda`, `crefTienda`, 
+                    `idVirtuemart`, `estado`) VALUES ('.$id.','.$datos['tiendaPrincipal'].',"'.$datos['refTienda'].'",
+                    '.$datos['id'].', "'.$datos['estadoWeb'].'")';
+                break;
+                case '3':
+                    $sql='INSERT INTO `articulosTiendas`(`idArticulo`, `idTienda`, `crefTienda`, 
+                    `idVirtuemart`, `estado`) VALUES ('.$id.','.$datos['tiendaWeb'].',"'.$datos['refTienda'].'",
+                    '.$datos['id'].', "'.$datos['estadoWeb'].'") 
+                    INSERT INTO `articulosTiendas`(`idArticulo`, `idTienda`, `crefTienda`, 
+                    `idVirtuemart`, `estado`) VALUES ('.$id.','.$datos['tiendaPrincipal'].',"'.$datos['refTienda'].'",
+                    '.$datos['id'].', "'.$datos['estadoWeb'].'")';
+                break;
+                
+            }
+            $smt = $DB->query($sql);
+            $respuesta['sqlArticulosTienda']=$sql;
+            if($DB->connect_errno){
+                $respuesta['error']=$sql;
+            }
+        }
+            $sql='INSERT INTO `articulosPrecios`(`idArticulo`, `pvpCiva`, `pvpSiva`, `idTienda`) 
+            VALUES ('.$id.','.$datos['precioCiva'].','.$datos['precioSiva'].','.$datos['tiendaPrincipal'].')';
+            $smt = $DB->query($sql);
+              if($DB->connect_errno){
+                $respuesta['error']=$sql;
+            }
+            $respuesta['sqlArticuloPrecios']=$sql;
+            if(count($datos['codBarras']>0)){
+                $bandera=0;
+                foreach($datos['codBarras'] as $cod){
+                    if($cod<>""){
+                    $sql='INSERT INTO `articulosCodigoBarras`(`idArticulo`, `codBarras`) VALUES ('.$id.',"'.$cod.'")';
+                    $smt = $DB->query($sql);
+                    if($DB->connect_errno){
+                        $respuesta['error']=$sql;
+                    }
+                    $respuesta['sqlcodBar'.$bandera]=$sql;
+                    $bandera++;
+                    }
+                   
+                }
+                
+            }
+            
+            
+        }
+        return $respuesta;
+        
+    }
+    
+    public function modificarEstadoWeb($idProducto, $idEstado, $idTienda){
+        if($idEstado==1){
+            $estado="Sin Publicar";
+        }else{
+            $estado="Publicado";
+        }
+        $sql='UPDATE articulosTiendas SET estado="'.$estado.'" where idArticulo='.$idProducto.' and idTienda='.$idTienda;
+        $respuesta['Consulta']=$this->Consulta_insert_update($sql);
+        return $respuesta;
+    }
+    
+    public function modificarVariosEstados($estado, $productos){
+        $sql='UPDATE articulos SET estado="'.$estado.'" WHERE idArticulo IN ('.$productos.')';
+         $respuesta['Consulta']=$this->Consulta_insert_update($sql);
+        return $respuesta;
+    }
 }
 
 
