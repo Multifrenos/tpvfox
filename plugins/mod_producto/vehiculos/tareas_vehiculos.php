@@ -55,7 +55,7 @@ $ObjVehiculos = new PluginClaseVehiculos();
 				$_SESSION['productos_seleccionados'] = array();
 			}
 			foreach ($idRecambios as $id){
-				$_SESSION['productos_seleccionados'][] =  $id;
+				$_SESSION['productos_seleccionados'][] =  $id['recambio_id'];
 			};
 			// Ahora añado a session el coche seleccionado.
 			if (!isset($_SESSION['coches_seleccionados'])){
