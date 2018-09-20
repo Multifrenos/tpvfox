@@ -52,6 +52,7 @@ class PluginClaseVehiculos extends ClaseConexion{
 				.'<div id="vehiculos_seleccionados">';
 		if (isset($_SESSION['coches_seleccionados'])){
 			foreach ($_SESSION['coches_seleccionados'] as $key=>$coche){
+              
 				$html.= $this->HtmlVehiculo($coche,$key);
 
 			}
@@ -60,11 +61,11 @@ class PluginClaseVehiculos extends ClaseConexion{
                 .'<div class="col-md-3">'
                 .   '<div class="ui-widget" id="divmarca">';
         $options = $this->ObtenerMarcasVehiculoWeb();
-        $cantidad=count($options['items']['items']);
+        $cantidad=count($options['items']);
         $html.='<label for="tags">Marca: '.$cantidad.'</label>'
                 .'<select id="combobox" class="marca">'
                 .'  <option value="0"></option>';
-        foreach ($options['items']['items'] as $marca){
+        foreach ($options['items'] as $marca){
                 $html.= '<option value="'.$marca['id'].'">'.$marca['nombre'].'</option>';
         }
         $html.='</select>'
@@ -108,9 +109,7 @@ class PluginClaseVehiculos extends ClaseConexion{
 			exit();
 		}
 		include ($this->ruta_proyecto.'/lib/curl/conexion_curl.php');
-		//~ echo '<pre>';
-		//~ print_r($respuesta);
-		//~ echo '</pre>';
+		
 		return $respuesta['Datos'];
 	
 	}

@@ -33,6 +33,7 @@
             $parametrosVehiculos = $ClasesParametrosPluginVehiculos->getRoot();
             $OtrosVarJS .= $Controler->ObtenerCajasInputParametros($parametrosVehiculos);
             $Ov=$ObjVersiones->htmlFormularioSeleccionVehiculo();
+           
             $htmlplugins['html'] = $Ov['html'];
         }
         //  Fin de carga de plugins.

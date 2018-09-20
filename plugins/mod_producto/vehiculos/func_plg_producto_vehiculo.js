@@ -89,8 +89,8 @@ function  SeleccionVersion(event="",dedonde=""){
 				return;
 			} else {
 				console.log('Obtuvimos los siguiente datos del vehiculo');
-				GuardoVehiculoSeleccionado(resultado['Datos'].item,resultado['Datos'].recambios);
-				console.log(resultado['Datos'].item);
+				GuardoVehiculoSeleccionado(resultado['Datos']['items'],resultado['Datos']['recambios']);
+				console.log(resultado['Datos']);
 				// Ahora tendría que redireccionar pero no se adonde, porque no tengo el dato en que pagina estoy...
 				 location.href =dedonde;
 			}
@@ -193,6 +193,7 @@ function mostrarSelectModelos(marca){
 		success    :  function (response) {
 				console.log('Respuesta de html con las opciones de marcas ');
 				var resultado = $.parseJSON(response);
+                console.log(resultado);
                 $('.modelo').html(resultado.html);
                 $('#modeloLabel').html("Modelo : "+resultado.items);
                 $('#divModelo').find('input').focus();

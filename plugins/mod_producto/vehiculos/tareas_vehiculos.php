@@ -27,9 +27,9 @@ $ObjVehiculos = new PluginClaseVehiculos();
 		case 'BuscarModelos':
 			$idMarca = $_POST['idMarca'];
 			$respuesta = array();
-			
 			$datosModelosUnaMarca = $ObjVehiculos->ObtenerModelosUnaMarcaWeb($idMarca);
-			$respuesta['options']= $datosModelosUnaMarca['Datos']['options_html'];
+			$respuesta['options']= $datosModelosUnaMarca['options_html'];
+            
 		break;
 		
 		case 'BuscarVersionVehiculo':
@@ -44,7 +44,6 @@ $ObjVehiculos = new PluginClaseVehiculos();
 			$idVersion = $_POST['idVersion'];
 			$respuesta = array();
 			$datosUnVehiculo = $ObjVehiculos->ObtenerUnVehiculo($idVersion);
-            
 			$respuesta= $datosUnVehiculo;
 		break;
 
@@ -90,7 +89,7 @@ $ObjVehiculos = new PluginClaseVehiculos();
         case 'modelosDeMarca':
         $marca=$_POST['marca'];
         $modelos=$ObjVehiculos->ObtenerModelosUnaMarcaWeb($marca);
-        $modelos=$modelos['Datos']['items']['items'];
+        $modelos=$modelos['Datos']['items'];
         $html='<option value=""></option>';
         foreach($modelos as $modelo){
             $html.='<option value="'.$modelo['id'].'">'.$modelo['nombre'].'</option>';
@@ -102,7 +101,8 @@ $ObjVehiculos = new PluginClaseVehiculos();
     case 'versionesModelo':
         $modelo=$_POST['modelo'];
         $versiones=$ObjVehiculos->ObtenerVersionesUnModeloWeb($modelo);
-        $versiones=$versiones['Datos']['items']['items'];
+        $respuesta['versiones']=$versiones;
+        $versiones=$versiones['Datos']['items'];
         $html='<option value=""></option>';
         foreach($versiones as $version){
             $html.='<option value="'.$version['id'].'">'.$version['nombre'].'</option>';
