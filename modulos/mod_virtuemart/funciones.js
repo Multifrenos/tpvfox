@@ -104,13 +104,14 @@ function nuevosEnWeb(){
     });
 }
 
-function comprobarProductos(productos){
+function comprobarProductos(productos, final){
     var tiendaWeb=$("#tiendaWeb").val();
     var parametros = {
             "pulsado"   : 'comprobarProductos',
             "productos" : productos,
             "idTienda"  :tiendaWeb
     };
+    console.log(productos);
      $.ajax({
         data       : parametros,
         url        : 'tareas.php',
@@ -123,8 +124,10 @@ function comprobarProductos(productos){
             console.log('Respuesta de comprobar productos');
             var resultado =  $.parseJSON(response);
             console.log(resultado);
-            $("#productosNuevos").html(resultado['htmlNuevos']);
-            $("#productosMod").html(resultado['htmlMod']);
+            $("#productosNuevos").prepend(resultado['htmlNuevos']);
+            $("#productosMod").prepend(resultado['htmlMod']);
+            //~ var productos = new Array();
+            actualizarProductosWeb(final);
         }
         
     });

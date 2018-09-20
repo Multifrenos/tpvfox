@@ -1,4 +1,4 @@
-var productos = new Array();
+//~ var productos = new Array();
 
 function AccionRecalcularPvpWeb(caja,tecla){
 	console.log('Entro en controlador de recalcularPvpWeb');
@@ -251,7 +251,7 @@ function actualizarProductosWeb(inicio){
     }else{
         final=inicio+100;
     }
-    
+    productos=[];
      var parametros = {
             "pulsado"   : 'actualizarProductosWeb',
             inicio: inicio,
@@ -267,7 +267,9 @@ function actualizarProductosWeb(inicio){
 		success    :  function (response) {
 				console.log('Respuesta actualizar ProductosWeb ');
 				var resultado = $.parseJSON(response);
+                var productos=new Array();
                 if(resultado['productos']['Datos']['item'].length>0){
+                    console.log("Productos en vuelta"+resultado['productos']['Datos']['item'].length);
                     for(i=0;i<resultado['productos']['Datos']['item'].length;i++){
                         producto=resultado['productos']['Datos']['item'][i];
                        
@@ -288,13 +290,14 @@ function actualizarProductosWeb(inicio){
                 BarraProceso(inicio, regWeb);
 				
                 if(final<regWeb){
-                      actualizarProductosWeb(final);
+                      comprobarProductos(productos, final);
+                      //~ actualizarProductosWeb(final);
+                    productos=[];
                        //~ alert("terminame barra");
                 }else{
                     comprobarProductos(productos);
                      BarraProceso(regWeb, regWeb);
                       //~ alert("terminame barra");
-                   
                 }
               
 				 

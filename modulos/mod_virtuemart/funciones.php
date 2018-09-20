@@ -44,12 +44,12 @@ function comparacionesProductos($productoWeb, $productoTpv, $idTienda){
 }
 function lineaProductosNuevos($productosNuevos){
     $html="";
-    $html='<h4><b>Productos Nuevos</b></h4>
-                <tr>
+    //~ $html='<h4><b>Productos Nuevos</b></h4>
+                //~ <tr>
                    
-                    <th>Datos Web</th>
-                    <th>Acciones</th>
-                </tr>';
+                    //~ <th>Datos Web</th>
+                    //~ <th>Acciones</th>
+                //~ </tr>';
                 $i=0;
     foreach ($productosNuevos as $nuevo){
         $html.='<tr id="nuevo_'.$i.'">
@@ -70,12 +70,12 @@ function lineaProductosNuevos($productosNuevos){
 }
 function lineaProductosModificador($productos, $idTienda){
      $html="";
-    $html='<h4><b>Productos Modificados</b></h4>
-                <tr>
-                    <th>Datos Web</th>
-                     <th>Datos tpv</th>
-                    <th>Acciones</th>
-                </tr>';
+    //~ $html='<h4><b>Productos Modificados</b></h4>
+                //~ <tr>
+                    //~ <th>Datos Web</th>
+                     //~ <th>Datos tpv</th>
+                    //~ <th>Acciones</th>
+                //~ </tr>';
                 $i=0;
     foreach ($productos as $producto){
         $html.='<tr id="mod_'.$i.'">
