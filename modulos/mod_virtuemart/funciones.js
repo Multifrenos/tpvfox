@@ -126,7 +126,6 @@ function comprobarProductos(productos, final){
             console.log(resultado);
             $("#productosNuevos").prepend(resultado['htmlNuevos']);
             $("#productosMod").prepend(resultado['htmlMod']);
-            //~ var productos = new Array();
             actualizarProductosWeb(final);
         }
         
