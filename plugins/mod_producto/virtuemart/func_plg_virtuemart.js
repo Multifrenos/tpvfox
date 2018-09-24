@@ -251,11 +251,16 @@ function actualizarProductosWeb(inicio){
     }else{
         final=inicio+100;
     }
-    productos=[];
+    cant=100;
+     var productos=[];
+     console.log("productos");
+     productos.length = 0;
+     console.log(productos);
      var parametros = {
             "pulsado"   : 'actualizarProductosWeb',
-            inicio: inicio,
-            final: final
+            inicio: cant,
+            final: final,
+            
     };
       $.ajax({
 		data       : parametros,
@@ -267,8 +272,10 @@ function actualizarProductosWeb(inicio){
 		success    :  function (response) {
 				console.log('Respuesta actualizar ProductosWeb ');
 				var resultado = $.parseJSON(response);
-                var productos=new Array();
+             
                 if(resultado['productos']['Datos']['item'].length>0){
+                     productos.length = 0;
+                        console.log(productos);
                     console.log("Productos en vuelta"+resultado['productos']['Datos']['item'].length);
                     for(i=0;i<resultado['productos']['Datos']['item'].length;i++){
                         producto=resultado['productos']['Datos']['item'][i];
@@ -285,8 +292,7 @@ function actualizarProductosWeb(inicio){
                         productos.push(nuevoProducto);
                     }
                 }
-               console.log(inicio);
-               console.log(final);
+              
                 BarraProceso(inicio, regWeb);
 				
                 if(final<regWeb){
@@ -295,7 +301,7 @@ function actualizarProductosWeb(inicio){
                     productos=[];
                        //~ alert("terminame barra");
                 }else{
-                    comprobarProductos(productos);
+                    //~ comprobarProductos(productos);
                      BarraProceso(regWeb, regWeb);
                       //~ alert("terminame barra");
                 }
