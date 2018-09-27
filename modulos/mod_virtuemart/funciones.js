@@ -115,6 +115,7 @@ function comprobarProductos(productos, final, bandera=""){
             "prodModif" :prodModif,
             "prodNuevos":prodNuevos
     };
+    console.log(productos);
      $.ajax({
         data       : parametros,
         url        : 'tareas.php',
@@ -137,6 +138,7 @@ function comprobarProductos(productos, final, bandera=""){
                   actualizarProductosWeb(final);
              }
            
+
         }
         
     });

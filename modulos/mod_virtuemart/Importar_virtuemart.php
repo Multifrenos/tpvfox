@@ -129,7 +129,9 @@
                           <div class="col-md-6">
                  <label>Beneficio por defecto</label>
                  <?php 
+              
                     $podBeneficio= array_search('beneficio', array_column($conf_defecto, 'nombre'));
+                
                  ?>
                  <input type="text" id="beneficio" value="<?php echo $conf_defecto[$podBeneficio]->default;?> " readonly=”readonly” size="5px">%
                  </div>

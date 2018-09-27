@@ -74,6 +74,7 @@ function lineaProductosNuevos($productosNuevos, $cantProdNuevos){
 }
 function lineaProductosModificador($productos, $idTienda, $cantProdModif){
     $html="";
+
     //~ $html='<h4><b>Productos Modificados</b></h4>
                 //~ <tr>
                     //~ <th>Datos Web</th>
@@ -84,6 +85,7 @@ function lineaProductosModificador($productos, $idTienda, $cantProdModif){
    if($cantProdModif==""){
         $cantProdModif=0;
     }
+
     foreach ($productos as $producto){
         $html.='<tr id="mod_'.$cantProdModif.'">
              <td><b>Nombre:</b>'.$producto[0]['nombre'].'<br>

@@ -16,6 +16,7 @@
         $OtrosVarJS ='';
         $htmlplugins = array();
         $CTArticulos = new ClaseProductos($BDTpv);
+
         $CFamilia=new ClaseFamilias($BDTpv);
         $CProveedor=new ClaseProveedor($BDTpv);
         $CTienda=new ClaseTienda($BDTpv);
@@ -24,7 +25,18 @@
         $Controler->loadDbtpv($BDTpv);
         
         // Cargamos el plugin que nos interesa.
-
+        if ($CTArticulos->SetPlugin('ClaseVehiculos') !== false){
+            // Existe plguin ObjeVersiones por lo que cargamos css para ese plugin.
+            echo '<link rel="stylesheet" href="'.$HostNombre.'/jquery/jquery-ui.min.css" type="text/css">';
+            $ObjVersiones= $CTArticulos->SetPlugin('ClaseVehiculos');
+            $ClasesParametrosPluginVehiculos = new ClaseParametros($RutaServidor . $HostNombre . '/plugins/mod_producto/vehiculos/parametros.xml');
+            $parametrosVehiculos = $ClasesParametrosPluginVehiculos->getRoot();
+            $OtrosVarJS .= $Controler->ObtenerCajasInputParametros($parametrosVehiculos);
+            $Ov=$ObjVersiones->htmlFormularioSeleccionVehiculo();
+           
+            $htmlplugins['html'] = $Ov['html'];
+        }
+       
         //  Fin de carga de plugins.
 
         // Inicializo varibles por defecto.
@@ -33,9 +45,6 @@
         $parametros = $ClasesParametros->getRoot();
         // Cargamos configuracion modulo tanto de parametros (por defecto) como si existen en tabla modulo_configuracion 
         $conf_defecto = $ClasesParametros->ArrayElementos('configuracion');
-        //~ echo '<pre>';
-        //~ print_r($conf_defecto);
-        //~ echo '</pre>';
         // Ahora compruebo productos_seleccion:
         $botonSeleccion=0;
         $prod_seleccion = array('NItems' => 0, 'display' => '');
@@ -146,6 +155,7 @@
         <?php echo $VarJS;?>
         </script>
         <script src="<?php echo $HostNombre; ?>/lib/js/teclado.js"></script>
+        <script src="<?php echo $HostNombre; ?>/lib/js/autocomplete.js"></script>
         
     </head>
 
@@ -156,7 +166,6 @@
 	}, 50);
 		</script>
 <?php
-//~ include_once $URLCom.'/header.php';
 include_once $URLCom.'/modulos/mod_menu/menu.php';
 ?>
 
