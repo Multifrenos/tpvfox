@@ -230,6 +230,7 @@ include_once $RutaServidor.$HostNombre.'/modulos/mod_producto/clases/ClaseProduc
             $final=$_POST['final'];
             
             $productos=$ObjViruemart->productosInicioFinal($inicio, $final);
+            error_log(count($productos['Datos']['item']));
             $respuesta['productos']=$productos;
             
        break;

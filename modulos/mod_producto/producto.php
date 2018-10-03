@@ -115,6 +115,15 @@
 				if(isset($datosWebCompletos['comprobarIvas']['comprobaciones'])){
 					$Producto['comprobaciones'][]= $datosWebCompletos['comprobarIvas']['comprobaciones'];
 				}
+				// Cargamos el plugin de Vehiculos
+				if ($CTArticulos->SetPlugin('ClaseVehiculos') !== false){
+					   $ObjVersiones= $CTArticulos->SetPlugin('ClaseVehiculos');
+					   $vehiculos =$ObjVersiones->ObtenerVehiculosUnProducto($idVirtuemart);
+                     
+						if (isset($vehiculos['Datos'])) {
+							$htmlVehiculos = $vehiculos['Datos']['html'];
+						}
+				 }
                 $tiendaWeb=$ObjVirtuemart->getTiendaWeb();
                 $comprobarEstado=$CTArticulos->modificarEstadoWeb($id, $datosWebCompletos['datosProductoWeb']['datosWeb']['estado'], $tiendaWeb['idTienda']);
 			}else{
@@ -364,8 +373,13 @@
                             
                                 <div class="panel-group">
                                     <?php
+                                    if (isset($htmlVehiculos)){
+                                            $num = 6; // Numero collapse;
+                                            $titulo = 'Vehiculos que montan este productos.';
+                                            echo  htmlPanelDesplegable($num,$titulo,$htmlVehiculos);
+                                    }
                                     if(isset( $datosWebCompletos['htmlnotificaciones']['html'])){
-                                         $num = 6; // Numero collapse;
+                                         $num = 7; // Numero collapse;
                                             $titulo = 'Notificaciones de clientes.';
                                             echo  htmlPanelDesplegable($num,$titulo,$datosWebCompletos['htmlnotificaciones']['html']);
                                     }

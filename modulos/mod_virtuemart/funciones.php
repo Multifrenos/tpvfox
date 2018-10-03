@@ -71,10 +71,10 @@ function lineaProductosNuevos($productosNuevos, $cantProdNuevos){
 function lineaProductosModificador($productos, $idTienda, $cantProdModif){
      //Objetivo: imprimir la linea cuando el producto es modificado
     $html="";
-   
    if($cantProdModif==""){
         $cantProdModif=0;
     }
+
     foreach ($productos as $producto){
         $html.='<tr id="mod_'.$cantProdModif.'">
              <td><b>Nombre:</b>'.$producto[0]['nombre'].'<br>
