@@ -93,8 +93,8 @@ switch ($pulsado) {
 	case 'RegistrarRestaStock':
 		$respuesta = array();
 		$id_ticketst =$_POST['id_ticketst'];
-		//~ $respuesta_servidor = $_POST['respuesta_servidor'];
-		$respuesta = RegistrarRestaStock($BDTpv,$id_ticketst);
+        $estado=$_POST['estado'];
+		$respuesta = RegistrarRestaStock($BDTpv,$id_ticketst, $estado);
 		break;
 	
 	case 'buscarClientes':
@@ -105,7 +105,6 @@ switch ($pulsado) {
 		//funcion de buscar clientes
 		//luego html mostrar modal 
 		if ($busqueda != ''){
-			//$res = BusquedaClientes($busqueda);
 			$res = BusquedaClientes($busqueda,$BDTpv,$tabla);
 		} 
 		if (!isset($res['datos'])){
@@ -170,6 +169,15 @@ switch ($pulsado) {
 			$respuesta=$nuevo;
 		}
 		break;
+        case 'cambiarClienteTicketGuardado':
+            $modCliente=$CTickets->modificarClienteTicket($_POST['id_ticketst'], $_POST['idCliente']);
+            if(isset($modCliente['error'])){
+                $mensaje="Error al modificar el cliente";
+            }else{
+                $mensaje="Cliente Modificado con Éxito";
+            }
+            $respuesta['mensaje']=$mensaje;
+        break;
 		
 		
 }

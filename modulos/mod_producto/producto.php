@@ -68,13 +68,17 @@
 		$Producto['comprobaciones'] = $CTArticulos->GetComprobaciones();
 		
 		// Antes de montar html de proveedores añado array de proveedores cual es pricipal
-		foreach ($Producto['proveedores_costes'] as $key=>$proveedor){
-			if ($proveedor['idProveedor'] === $Producto['proveedor_principal']['idProveedor']){
-				// Indicamos que es le principal
-				$Producto['proveedores_costes'][$key]['principal'] = 'Si';
-			}
-		}
-		// ==========		 Comprobamso el ultimo coste y que proveedor		====  ===== //
+        if ( isset($Producto['proveedores_costes'])){
+            foreach ($Producto['proveedores_costes'] as $key=>$proveedor){
+                if ($proveedor['idProveedor'] === $Producto['proveedor_principal']['idProveedor']){
+                    // Indicamos que es le principal
+                    $Producto['proveedores_costes'][$key]['principal'] = 'Si';
+                }
+            }
+        } else {
+            $Producto['proveedores_costes']= array();
+        }
+        // ==========		 Comprobamso el ultimo coste y que proveedor		====  ===== //
 		$proveedores_costes = comprobarUltimaCompraProveedor($Producto['proveedores_costes']);
 		
 		// Ahora comprobamos si el coste ultimo es correcto.
@@ -108,36 +112,20 @@
 			$ClasesParametrosPluginVirtuemart = new ClaseParametros($RutaServidor . $HostNombre . '/plugins/mod_producto/virtuemart/parametros.xml');
 			$parametrosVirtuemart = $ClasesParametrosPluginVirtuemart->getRoot();
 			$OtrosVarJS = $Controler->ObtenerCajasInputParametros($parametrosVirtuemart);
-            if ($idVirtuemart>0 ) { 
-			// Obtengo se conecta a la web y obtiene los datos de producto cruzado.
-				$datosWebCompletos=$ObjVirtuemart->datosTiendaWeb($idVirtuemart,  $Producto['iva'], $ClasePermisos->getAccion("VerProductoWeb"));
-				// Esto para comprobaciones iva... ??? Es correcto , si esto se hace JSON, no por POST.
-				if(isset($datosWebCompletos['comprobarIvas']['comprobaciones'])){
-					$Producto['comprobaciones'][]= $datosWebCompletos['comprobarIvas']['comprobaciones'];
-				}
-				// Cargamos el plugin de Vehiculos
-				if ($CTArticulos->SetPlugin('ClaseVehiculos') !== false){
-					   $ObjVersiones= $CTArticulos->SetPlugin('ClaseVehiculos');
-					   $vehiculos =$ObjVersiones->ObtenerVehiculosUnProducto($idVirtuemart);
-                     
-						if (isset($vehiculos['Datos'])) {
-							$htmlVehiculos = $vehiculos['Datos']['html'];
-						}
-				 }
-                $tiendaWeb=$ObjVirtuemart->getTiendaWeb();
-                $comprobarEstado=$CTArticulos->modificarEstadoWeb($id, $datosWebCompletos['datosProductoWeb']['datosWeb']['estado'], $tiendaWeb['idTienda']);
-			}else{
-				if($id>0){
-					if($ObjVirtuemart->getTiendaWeb()!=false){
-						$tiendaWeb=$ObjVirtuemart->getTiendaWeb();
-						$datosWebCompletos['datosProductoWeb']['html']=$ObjVirtuemart->htmlDatosVacios($id, $tiendaWeb['idTienda'], $ClasePermisos->getAccion("VerProductoWeb"));
-					}
-				}
-				 
-			}                      
-		}   
+            // Obtengo el id de la tienda Web
+            $tiendaWeb=$ObjVirtuemart->getTiendaWeb();
+            // Obtengo se conecta a la web y obtiene los datos de producto cruzado.
+            $datosWebCompletos=$ObjVirtuemart->datosCompletosTiendaWeb($idVirtuemart,$Producto['iva'],$Producto['idArticulo'],$tiendaWeb['idTienda']);
 
-        
+            // Esto para comprobaciones iva... ??? Es correcto , si esto se hace JSON, no por POST.
+            if(isset($datosWebCompletos['comprobarIvas']['comprobaciones'])){
+                $Producto['comprobaciones'][]= $datosWebCompletos['comprobarIvas']['comprobaciones'];
+            }
+            
+            if ($idVirtuemart>0 ) { 
+			   $cambiarEstado=$CTArticulos->modificarEstadoWeb($id, $datosWebCompletos['datosWeb']['estado'], $tiendaWeb['idTienda']);
+			}                  
+		}
 				
 		
 		// ==========		Montamos  html que mostramos. 			============ //
@@ -364,8 +352,8 @@
             </form>
             <?php 
              if($ClasePermisos->getAccion("VerProductoWeb")==1){
-                        if(isset($datosWebCompletos['datosProductoWeb']['html'])){
-                               echo $datosWebCompletos['datosProductoWeb']['html']; 
+                        if(isset($datosWebCompletos['htmlproducto']['html'])){
+                               echo $datosWebCompletos['htmlproducto']['html']; 
                         }
                         ?>
                         

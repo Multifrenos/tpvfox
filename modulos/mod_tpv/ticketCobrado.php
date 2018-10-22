@@ -19,7 +19,9 @@
 		include_once ($URLCom.'/controllers/parametros.php');
 		$ClasesParametros = new ClaseParametros('parametros.xml');
 		$parametros = $ClasesParametros->getRoot();
-		
+		foreach($parametros->cajas_input->caja_input as $caja){
+            $caja->parametros->parametro[0]="cobrados";
+        }
 		// Cargamos configuracion modulo tanto de parametros (por defecto) como si existen en tabla modulo_configuracion 
 		$conf_defecto = $ClasesParametros->ArrayElementos('configuracion');
 		$configuracion = $Controler->obtenerConfiguracion($conf_defecto,'mod_tpv',$Usuario['id']);
@@ -51,9 +53,6 @@
 		// Añadimos productos a JS
 		// -------------- Obtenemos de parametros cajas con sus acciones ---------------  //
 		$VarJS = $Controler->ObtenerCajasInputParametros($parametros);
-		//~ echo '<pre>';
-		//~ print_r($ticket);
-		//~ echo '</pre>';
 		?>
 		<script type="text/javascript">
 		// Objetos cajas de tpv
@@ -104,6 +103,7 @@
 				 	<li><button id="DescontarStock" type="button" class="btn btn-primary" onclick="PrepararEnviarStockWeb(<?php echo $id;?>);" >Descontar Stock en Web</button>
 				 <?php } ?>
 				 	<li><a onclick="imprimirTicketCerrado(<?php echo $id;?>);">Imprimir</a></li>
+                    <li><a id="cambioCliente" onclick="cambioCliente(<?php echo $id;?>);" style="display:none;">Cambio Cliente</a></li>
 				</ul>
 				</div>	
 			</nav>
@@ -128,7 +128,6 @@
 						<span id="Usuario"><?php echo $ticket['cabecera']['username'];?></span><br/>
 					</div>
 				</div> 
-				<?php //Cliente  ?>
 				<div class="form-group">
 					<label>Cliente:</label>
 					<?php 

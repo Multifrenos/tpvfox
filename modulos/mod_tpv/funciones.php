@@ -50,7 +50,7 @@ function BuscarProductos($id_input, $campoAbuscar, $busqueda, $BDTpv) {
     //si vuelta es distinto de 1 es que entra por 2da vez busca %likes%	
     $busquedas = array();
 
-    if (count($palabras > 0)) {
+    if (count($palabras) > 0) {
         $busquedas[] = implode(' and ', $whereIdentico);
 
         $busquedas[] = implode(' and ', $likes);
@@ -296,7 +296,6 @@ function recalculoTotales($productos) {
             //~ $desglose[$product->ctipoiva]['tipoIva'] =$iva;
         }
     }
-    //~ $respuesta['ivas'] = $ivas;
     $respuesta['desglose'] = $desglose;
     $respuesta['total'] = number_format($subtotal, 2);
     return $respuesta;
@@ -317,7 +316,6 @@ function ControlEstadoTicketsAbierto($BDTpv, $idUsuario, $idTienda) {
     }
     // Si fue correcto comprobamos a cuantos afectos, que sería los tickets abiertos.
     $respuesta['num_afectados'] = $BDTpv->affected_rows;
-    //~ $respuesta['consulta'] = $sql;
     return $respuesta;
 }
 
@@ -774,7 +772,6 @@ function ivas($BDTpv) {
     } else {
         $resultado = 0;
     }
-    //$resultado['sql'] = $sql;
     return $resultado;
 }
 
@@ -810,21 +807,23 @@ function ObtenerRefWebProductos($BDTpv, $productos, $idWeb) {
     $where = '(' . implode(',', $wheres) . ')';
 
     $consulta = 'SELECT idArticulo,idVirtuemart FROM articulosTiendas WHERE `idTienda` =' . $idWeb . ' AND idArticulo IN ' . $where;
-    if ($query = $BDTpv->query($consulta)) {
-        while ($dato = $query->fetch_assoc()) {
-            $key_id_producto = $dato['idArticulo'];
-            foreach ($productos as $key=>$producto) {
-                if ($producto['idArticulo'] === $key_id_producto){
-                    $productos[$key]['idVirtuemart'] = $dato['idVirtuemart'];
-                }
-            }
-        }
-    } else {
+    $res = $BDTpv->query($consulta);
+    if ( mysqli_error($BDTpv)) {
         $resultado['error'] = ' Error en la consulta';
         $resultado['consulta'] = $consulta;
-    }
-    // Montamos productos con idVirtuemart.
+    } else {
+            while ($dato = $res->fetch_assoc()) {
+            $key_id_producto = $dato['idArticulo'];
+                foreach ($productos as $key=>$producto) {
+                    // Montamos productos con idVirtuemart.
+                    if ($producto['idArticulo'] === $key_id_producto){
+                        $productos[$key]['idVirtuemart'] = $dato['idVirtuemart'];
+                        
+                    }
+                }
+            }
    
+    } 
     $resultado['productos'] = $productos;
     return $resultado;
 }
@@ -992,14 +991,11 @@ function htmlClientes($busqueda, $dedonde, $clientes = array()) {
     return $resultado;
 }
 
-function RegistrarRestaStock($BDTpv, $id) {
+function RegistrarRestaStock($BDTpv, $id, $estado) {
     // @ Objetivo:
     // Registrar aquellos tickets que hemos ya descontado stock en la web.
     $resultado = array();
-    //~ if ($respuesta_servidor['estado'] === 'Correcto') {
-        //~ $respuesta_servidor['registro_cambiados'] = 'Registros cambiados ' . $respuesta_servidor['registro_cambiados'];
-    //~ }
-    $sql = 'INSERT INTO `importar_virtuemart_tickets`(`idTicketst`, `Fecha`, `estado`, `respuesta`) VALUES (' . $id . ',now(),"' . $respuesta_servidor['estado'] . '","' . $respuesta_servidor['registro_cambiados'] . '")';
+    $sql = 'INSERT INTO `importar_virtuemart_tickets`(`idTicketst`, `Fecha`, `estado`) VALUES (' . $id . ',now(),"' . $estado . '")';
 
     $BDTpv->query($sql);
     if (mysqli_error($BDTpv)) {
@@ -1008,7 +1004,6 @@ function RegistrarRestaStock($BDTpv, $id) {
         error_log(' Rotura en funcion RegistrarRestaSoctk funcion.php de mod_tpv linea 1034');
         error_log($BDTpv->error_list);
         // Rompemos programa..
-        //exit();
     } else {
         // Enviamos datos que cuantos registros fueron añadidos o modificados por cada consulta..
         // aunque no lo utilizamos.

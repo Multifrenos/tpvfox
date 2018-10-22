@@ -10,16 +10,27 @@ function AccionRecalcularPvpWeb(caja,tecla){
     }
 
 }
-function modificarProductoWeb(idProducto="", idTienda=""){
-    //@Objetivo:
-    //MOdificar los datos del producto en la web 
+function modificarProductoWeb(idProducto="", idTiendaWeb=""){
+    //@ Objetivo:
+    // Modificar los datos del producto en la web
+    // Llegamos aquí , tanto al pulsa Modificar como añadir producto.
+    // Los dos botones se montan en ClaseVirtuemart del plugin.
     console.log("entre en modificar producto web ");
       var mensaje = confirm("¿Estás seguro que quieres AÑADIR / MODIFICAR el producto en la web?");
-    if (mensaje) {   
-    if($('#referenciaWeb').val()=="" || $('#nombreWeb').val()=="" || $('#precioSivaWeb').val()==""){
-        alert("Campos necesarios vacios, Referencia, Nombre y Precio sin iva");
-    }else{
+    var iva =$('#ivasWeb').val();
     
+    
+    if (mensaje === false || iva === null || $('#nombreWeb').val()=="" || $('#precioSivaWeb').val()=="" ) {   
+        // El usuario no acepto,  o hay campo vacios. No continuamos
+        if ( $('#nombreWeb').val()=="" || $('#precioSivaWeb').val()=="" ){
+            alert("Campos necesarios vacios, Referencia, Nombre y Precio sin iva");
+        }
+        if (iva === null){
+        alert("No hay iva .... algo salio mal.");
+        }
+        return;
+    }
+        
     stock=parseInt($('#stockon').val())-parseInt($('#stockmin').val());
     //~ console.log(stock);
     var datos={
@@ -33,7 +44,7 @@ function modificarProductoWeb(idProducto="", idTienda=""){
         'alias':        $('#alias').val(),
         'stock':        stock,
         'idProducto':   idProducto, 
-        'idTienda':     idTienda
+        'idTiendaWeb':     idTiendaWeb
     };
     
     console.log(datos);
@@ -64,8 +75,7 @@ function modificarProductoWeb(idProducto="", idTienda=""){
                      
                 }	
             });
-    }
-}
+      
 }
 function ModalNotificacion(numLinea){
     //@Objetivo: mostrar el modal para enviar el correo de la notificación
@@ -183,7 +193,8 @@ function modificarIvaWeb(){
 }
 
 function ObtenerDatosProducto(){
- 
+    // @ Objetivo:
+    // Obtener los datos de tpv y ponerlos en formulario producto web, para poder enviar o modificar.
     
     $('#referenciaWeb').val($('#referencia').val());
     $('#nombreWeb').val($('#nombre').val());
@@ -191,20 +202,26 @@ function ObtenerDatosProducto(){
     $('#precioCivaWeb').val($('#pvpCiva').val());
     NumCodBarras=$("[id*=codBarras_]:input").length;
     var CodBarras="";
+    var separador = "";
     for(i=0;i<NumCodBarras;i++){
-        CodBarras=CodBarras.concat($('#codBarras_'+i).val()+";");
+        // Separamos los codbarras con ;
+        if ( i >0){
+            separador = ';';
+        }
+        CodBarras=CodBarras.concat(separador + $('#codBarras_'+i).val());
     }
      $('#codBarrasWeb').val(CodBarras);
     console.log(CodBarras);
+    
 }
 
-function subirProductosWeb(idTienda){
+function subirProductosWeb(idTiendaWeb){
      $('.loader').show();
     var parametros = {
 		"pulsado"    	: 'subirProductosWeb',
-        "idTienda"      :idTienda
-		};
-        $.ajax({
+        "idTiendaWeb"      :idTiendaWeb
+	};
+    $.ajax({
 		data       : parametros,
 		url        :  ruta_plg_virtuemart+'tareas_virtuemart.php',
 		type       : 'post',
@@ -216,18 +233,16 @@ function subirProductosWeb(idTienda){
 				var resultado = $.parseJSON(response);
                 console.log(resultado);
                  $('.loader').hide();
-                if(resultado.productoEnWeb.length >0){
+                if(resultado.productoEnWeb.length > 0){
                    alert("Producto que YA ESTABAN y NO se subieron: "+JSON.stringify(resultado.productoEnWeb));
                 }
-                if(resultado.error){
-                    alert("Error de SQL: " + resultado.error);
+                if(resultado.errores){
+                    alert("¡¡¡ ERRORES !!! Hubo los siguientes errores"+JSON.stringify(resultado.errores));
                 }
-                if(resultado.contadorProductos>0){
+                if(resultado.contadorProductos > 0){
                     alert("Se han subido a la web :"+ resultado.contadorProductos+" Productos");
                 }
-				//~ location.href="ListaProductos.php";
-				 
-		}	
+        }
 	});
 }
 function contarProductosWeb(callback){
@@ -317,28 +332,37 @@ function actualizarProductosWeb(inicio){
 
 function enviarStockWeb(tienda_web,productos,idTicket){
     $("#DescontarStock").prop("disabled", true);
-      var parametros = {
-            "pulsado"   : 'RestarStock',
-            productos: productos
-    };
-    console.log(parametros);
-      $.ajax({
-		data       : parametros,
-		url        :  ruta_plg_virtuemart+'tareas_virtuemart.php',
-		type       : 'post',
-		beforeSend : function () {
-		console.log('*********  restar stock en la web **************');
-		},
-		success    :  function (response) {
-				console.log('Respuesta de restar stock en la web ');
-				var resultado = $.parseJSON(response);
-                console.log(resultado);
-                if(resultado['productos']['Datos']['error']){
-                    alert("Error al modificar el stock en la web");
-                }
-                RegistrarRestarStockTicket(idTicket);
-		}	
-	});
+    console.log('Numeor productos a enviar:'+ productos.length)
+    if (productos.length >0){
+        var parametros = {
+                "pulsado"   : 'RestarStock',
+                //~ "productos": JSON.stringify(productos)
+                "productos": productos
+        };
+        console.log(parametros);
+          $.ajax({
+            data       : parametros,
+            url        :  ruta_plg_virtuemart+'tareas_virtuemart.php',
+            type       : 'post',
+            beforeSend : function () {
+            console.log('*********  restar stock en la web **************');
+            },
+            success    :  function (response) {
+                    console.log('Respuesta de restar stock en la web ');
+                    var resultado = $.parseJSON(response);
+                    console.log(resultado);
+                    if(resultado['productos']['Datos']['sql']['error']){
+                        alert("Error al modificar el stock en la web");
+                        estado="";
+                    }else{
+                        estado="Correcto";
+                    }
+                    RegistrarRestarStockTicket(idTicket, estado);
+            }	
+        });
+    } else {
+        alert (' Error intenta envia stock pero no tiene producto ' );
+    }
 }
 
 

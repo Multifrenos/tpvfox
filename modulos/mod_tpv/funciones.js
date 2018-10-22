@@ -32,14 +32,13 @@ function cobrarF1(){
 			success:  function (response) {
 				console.log('Respuesta ajax - CobrarF1 ');
 				var resultado =  $.parseJSON(response);
-				//HtmlCobrar = resultado;
-				//busqueda = resultado.cobrar;
+				
 				
 				var HtmlCobrar = resultado.html;  //$resultado['html'] de montaje html
 				var titulo = 'COBRAR ';
 				abrirModal(titulo,HtmlCobrar);
 				SelectAlLanzarModal('entrega');
-				//alert('cobrar');
+				
 				
 			}
 		});
@@ -158,10 +157,6 @@ function agregarFila(datos,campo=''){
 			
 			var resultado =  $.parseJSON(response);
 			var nuevafila = resultado['html'];
-			//~ console.log(nuevafila);
-			
-			//$ signifca jQuery 
-			//$("#tabla").append(nuevaFila);
 			$("#tabla").prepend(nuevafila);
 			console.log('algun campo:'+typeof campo);
 			if (campo ==='') {
@@ -198,8 +193,6 @@ function retornarFila(num_item){
 	line = "#Row" +productos[num_item].nfila;
 	// Nueva Objeto de productos.
 	productos[num_item].estado= 'Activo';
-	//~ var pvp =productos[num_item].pvpconiva;
-
 	$(line).removeClass('tachado');
 	$(line + "> .eliminar").html('<a onclick="eliminarFila('+num_item+');"><span class="glyphicon glyphicon-trash"></span></a>');
 	if (productos[num_item].unidad == 0) {
@@ -265,7 +258,6 @@ function grabarTicketsTemporal(){
 		},
 		success    :  function (response) {
 			console.log('Respuesta de grabar');
-			//~ console.log(response);
 			var resultado =  $.parseJSON(response); 
 			// Cambiamos el estado :
 			cabecera.estadoTicket = resultado.estadoTicket;
@@ -532,7 +524,10 @@ function escribirClienteSeleccionado(id,nombre,dedonde=''){
 	$('#Cliente').val(nombre);
 	// Cerramos modal  y le indicamos destino focus.
 	cerrarPopUp(); // Destino no indicamo ya que no sabes...
-	if (dedonde ='tpv'){
+    if(dedonde == 'cobrados'){
+        $('#cambioCliente').show();
+    }
+	if (dedonde =='tpv'){
 		// Cambiamos el id del cliente.
 		cabecera.idCliente = id;
 		if ( productos.length>0){
@@ -542,6 +537,7 @@ function escribirClienteSeleccionado(id,nombre,dedonde=''){
 		// Ponemos focus por defecto.
 		ponerFocus('Codbarras');
 	} 
+    
 	
 }
 
@@ -818,10 +814,8 @@ function recalculoImporte(cantidad,num_item){
 		eliminarFila(num_item);
 	}
 	productos[num_item].unidad = cantidad;
-	//alert('DentroReclaculo:'+producto[nfila]['NPCONIVA']);
 	var importe = cantidad*productos[num_item].pvpconiva;
 	var id = '#N'+productos[num_item].nfila+'_Importe';
-	//alert('recalcular'+id);
 	importe = importe.toFixed(2);
 	$(id).html(importe);
 	grabarTicketsTemporal();
@@ -836,7 +830,6 @@ function PrepararEnviarStockWeb(idTicket){
 
 	//  Inicializamos Variables:
 	var tienda_web = [];	
-	console.log('PREPARAMOS DATOS PARA ENVIAR');
     //  Obtenemos productos del ticket en cuestion.
     
     
@@ -853,74 +846,55 @@ function PrepararEnviarStockWeb(idTicket){
 			// Debería tener un sitio para meter barra proceso, ya que puede tardar..
 			// Este proceso no,pero el siguiente si..
 			// De momento utilizo alert
-			console.log('*********  Preparando datos para enviar... ****************');
+			console.log('*********  Preparando Obtener Referencias tienda web ****************');
 		},
 		success    :  function (response) {
-			console.log('Respuesta de envio de datos');
-			var resultado =  $.parseJSON(response);
-            console.log (resultado);
-			// Ponemos datos de tienda_web en variable
+			console.log('**********  Respuesta de Obtener Referencias tienda web **************');
+            
+            var resultado =  $.parseJSON(response);
+            console.log(resultado);
+            // Ponemos datos de tienda_web en variable
 			tienda_web = resultado.tienda;
 			// Recuerda que el repción de los datos no es el mismo que envio, por debemos asociar key con valor.
-            productos = resultado.productos;
-            console.log(productos);
-            // Buscamos key en producto que no tenga virtuemart no los mandamos.
-            for ( x=0; x < productos.length ; x ++){
-				if (productos[x].idVirtuemart >0 ){
-					// Correcto..
-                    console.log(productos[x]);
-				} else {
-                    delete productos[x]; // Eliminamos ese producto ya que no tiene virtuemart.
+            productos_enviar = resultado['productos'];
+            console.log(' Ahora recorremos los productos y comprobamos que tiene idVirtuemart');
+            for ( x=0; x < productos_enviar.length ; x ++){
+                console.log('Cantidad de productos:'+productos_enviar.length);
+                console.log('tipo dato idvrituemart para producto['+x+']:'+typeof productos_enviar[x].idVirtuemart );
+                if (productos_enviar[x].idVirtuemart == undefined ){
+                   alert("Este producto:"+ productos_enviar[x].cdetalle +" \n No tiene relacion con en la web de momento no continuamos");
+                   delete productos_enviar[x]; // Eliminamos ese producto ya que no tiene virtuemart.
+                   return ;
                 }
-			}
+                // Ahota borramos datos que no necesitamos enviar
+                // Evitar errores al enviar post y por curl
+                delete productos_enviar[x].cdetalle;
+                delete productos_enviar[x].estadoLinea;
+                delete productos_enviar[x].cdetalle;
+                delete productos_enviar[x].ccodbar;
+            }
             // Ahora aquellos productos que tiene idVirtuemart
-            //~ EnviarStockWeb(tienda_web,productos,idTicket);
-            enviarStockWeb(tienda_web,productos,idTicket);
+            console.log('Voy a ir a enviar Stock');
+            console.log(productos_enviar);
+            enviarStockWeb(tienda_web,productos_enviar,idTicket);
+
+            // Buscamos key en producto que no tenga virtuemart no los mandamos.
+           
+           
+            
 		}
 	});
 	
 }
-
-//~ function EnviarStockWeb(tienda_web,productos,idTicket){
-	//~ // @Objetivo :
-	//~ // Ejecutar en servidor de web funcion que reste stock de productos
-	//~ // Pendiente el que no lo haga dos vez , si hace clic o intro muy rapido.
-	//~ $("#DescontarStock").prop("disabled", true);
-	//~ var url_ruta = tienda_web.dominio + '/administrator/apisv/tareas.php';
-	//~ var parametros = {
-		//~ "key" :  tienda_web.key_api,
-		//~ "action"    : 'RestarStock',
-		//~ "productos"	: JSON.stringify(productos)
-	//~ };
-	//~ $.ajax({
-		//~ data       : parametros,
-		//~ url        : url_ruta,
-		//~ type       : 'post',
-		//~ beforeSend : function () {
-		//~ console.log('*********  Envio datos para Buscar Producto  ****************');
-		//~ },
-		//~ success    :  function (response) {
-				//~ console.log('Respuesta de envio de datos');
-
-				//~ var resultado = response;
-	
-				//~ if (resultado['Datos'].estado !== 'Correcto'){
-					//~ // Quiere decir que algo salio mal.. por lo que debemos guardalo en registro como error.
-					//~ alert(' Error, algo salio mal.');
-				//~ }
-				//~ // Ahora registramos en tpv ( importar_virtuemart_ticketst el resultado)
-				//~ RegistrarRestarStockTicket(resultado['Datos'],idTicket);
-			//~ }
-			
-	//~ });
-//~ }  
-
-function RegistrarRestarStockTicket(id_ticketst){
+ 
+function RegistrarRestarStockTicket(id_ticketst, estado){
+      $("#DescontarStock").prop("disabled", true);
 	// Ejecutar en servidor local (tpv) registro de que ya se resto stock.
     console.log("entre en registrar restar stock ticket");
 	var parametros = {
 		"pulsado"    		: 'RegistrarRestaStock',
-		"id_ticketst"		: id_ticketst
+		"id_ticketst"		: id_ticketst,
+        "estado"            :estado
 
 	};
 	$.ajax({
@@ -932,7 +906,6 @@ function RegistrarRestarStockTicket(id_ticketst){
 		},
 		success    :  function (response) {
 				console.log('Respuesta de registro resta de stock en tpv');
-				//~ var resultado = $.parseJSON(response);
 				var resultado = response;
 			}
 			
@@ -967,7 +940,6 @@ function GuardarConfiguracion(){
 		},
 		success    :  function (response) {
 				console.log('Respuesta de grabar configuracion');
-				//~ var resultado = $.parseJSON(response);
 				var resultado = response;
 			}
 			
@@ -976,30 +948,6 @@ function GuardarConfiguracion(){
 
 	
 }
-//~ function abrirIndicencia(dedonde){
-	//~ var parametros = {
-		//~ "pulsado"    : 'abririncidencia',
-		//~ "dedonde" : dedonde,
-		//~ "usuario":cabecera.idUsuario,
-		//~ "idReal":cabecera.idReal
-	//~ };
-		//~ $.ajax({
-		//~ data       : parametros,
-		//~ url        : 'tareas.php',
-		//~ type       : 'post',
-		//~ beforeSend : function () {
-			//~ console.log('*********  Modificando los importes de la factura  ****************');
-		//~ },
-		//~ success    :  function (response) {
-			//~ console.log('Respuesta de la modificación de los importes');
-			//~ var resultado =  $.parseJSON(response);
-			//~ titulo="Crear incidencia";
-			//~ html=resultado.html;
-			//~ abrirModal(titulo, html);
-		//~ }
-	//~ });
-//~ }
-
 
 function ActivarPrecioCIva(event,nfila){
 	// Objetivo:
@@ -1019,7 +967,6 @@ function bloquearCajaProveedor(caja){
 function comprobarNumero(valor){
 	// Objetivo validar un numero decimal tanto positivo , como negativo.
 	var RE = /^\-?\d*\.?\d*$/;
-	//~ var RE=  new RegExp('^([0-9]\.[0-9]*|[1-9][0-9]+\.[0-9]*)');
 	console.log(typeof valor);
 	if (typeof valor === 'string'){
 		if (valor.substr(-10,1) === '0'){
@@ -1035,4 +982,28 @@ function comprobarNumero(valor){
         return false;
     }
 	
+}
+
+function cambioCliente(idTicket){
+    var id=$('#id_cliente').val();
+    var parametros = {
+		"pulsado"    		: 'cambiarClienteTicketGuardado',
+		"id_ticketst"		: idTicket,
+        "idCliente"            :id
+
+	};
+	$.ajax({
+		data       : parametros,
+		url        : 'tareas.php',
+		type       : 'post',
+		beforeSend : function () {
+		console.log('*********  MOdificar datos cliente en el tickets seleccionado **************');
+		},
+		success    :  function (response) {
+				console.log('Respuesta de modificar datos de clientes');
+				 var resultado = $.parseJSON(response);
+                alert(resultado.mensaje);
+			}
+			
+	});
 }
