@@ -11,19 +11,17 @@
         include_once $URLCom.'/modulos/mod_producto/clases/ClaseProductos.php';
         include_once ($URLCom .'/controllers/parametros.php');
         include_once $URLCom.'/modulos/mod_familia/clases/ClaseFamilias.php';
-        include_once $URLCom.'/modulos/mod_proveedor/clases/ClaseProveedor.php';
-        include_once $URLCom.'/modulos/mod_tienda/clases/ClaseTienda.php';
+        include_once $URLCom.'/clases/Proveedores.php';
         $OtrosVarJS ='';
         $htmlplugins = array();
         $CTArticulos = new ClaseProductos($BDTpv);
 
         $CFamilia=new ClaseFamilias($BDTpv);
-        $CProveedor=new ClaseProveedor($BDTpv);
-        $CTienda=new ClaseTienda($BDTpv);
+        $CProveedor=new Proveedores($BDTpv);
         $Controler = new ControladorComun; // Controlado comun..
         // Añado la conexion
         $Controler->loadDbtpv($BDTpv);
-        
+        $id_tienda_principal = $Tienda['idTienda'];
         // Cargamos el plugin que nos interesa.
         if ($CTArticulos->SetPlugin('ClaseVehiculos') !== false){
             // Existe plguin ObjeVersiones por lo que cargamos css para ese plugin.
@@ -116,20 +114,33 @@
                     }
                 }
             }
-            
             $productos = $CTArticulos->obtenerProductos($htmlConfiguracion['campo_defecto'], $filtro . $NPaginado->GetLimitConsulta());
         }
-
-       
         
+        if (isset($productos['error'])){
+            //Hubo un error a la ahora obtener los datos de los productos.
+            $error = array('tipo' => 'danger',
+                'dato' => $productos['error'],
+                'mensaje' => $productos['consulta']
+            );
+            $CTArticulos->SetComprobaciones($error);
+        }
+        // Obtenemos todos los proveedores para realizar la busqueda producto por proveedores.
         $todosProveedores= $CProveedor->todosProveedores();
-     
+        if (isset( $todosProveedores['error'])){
+            //Hubo un error a la ahora obtener los datos de los productos.
+            $error = array('tipo' =>'warning',
+                'dato' => $todosProveedores['error'],
+                'mensaje' => $todosProveedores['error'].' :'.$todosProveedores['consulta']
+            );
+            $CTArticulos->SetComprobaciones($error);
+        }
          
-         if ($CTArticulos->SetPlugin('ClaseVirtuemart') !== false){
+        if ($CTArticulos->SetPlugin('ClaseVirtuemart') !== false){
             $ObjVirtuemart = $CTArticulos->SetPlugin('ClaseVirtuemart');
             echo $ObjVirtuemart->htmlJava();
             $tiendaWeb=$ObjVirtuemart->getTiendaWeb();
-         }
+        }
         
         // -------------- Obtenemos de parametros cajas con sus acciones ---------------  //
 		$VarJS = $Controler->ObtenerCajasInputParametros($parametros).$OtrosVarJS;
@@ -196,12 +207,12 @@ include_once $URLCom.'/modulos/mod_menu/menu.php';
                             <?php
                           if($ClasePermisos->getAccion("crear")==1){
                                 ?>
-                                <li><a href="#section2" onclick="metodoClick('AgregarProducto');";>Añadir</a></li>
+                                <li><a href="#section2" onclick="metodoClick('AgregarProducto');">Añadir</a></li>
                                 <?php
                            }
                             if($ClasePermisos->getAccion("modificar")==1){
                             ?>
-                            <li><a href="#section2" onclick="metodoClick('VerProducto', 'producto');";>Modificar</a></li>
+                            <li><a href="#section2" onclick="metodoClick('VerProducto', 'producto');">Modificar</a></li>
                             <?php 
                             }
                             ?>
@@ -227,7 +238,7 @@ include_once $URLCom.'/modulos/mod_menu/menu.php';
                             }
                             if($ClasePermisos->getAccion("imprimirEtiquetas")==1){
                              ?>
-                            <li><a href='ListaEtiquetas.php' onclick="metodoClick('ImprimirEtiquetas', 'listaEtiqueta');";>Imprimir Etiquetas</a></li>
+                            <li><a href='ListaEtiquetas.php' onclick="metodoClick('ImprimirEtiquetas', 'listaEtiqueta');">Imprimir Etiquetas</a></li>
                            <?php 
                             }
                             if($ClasePermisos->getAccion("imprimirMayor")==1){
@@ -320,8 +331,8 @@ include_once $URLCom.'/modulos/mod_menu/menu.php';
                                    <select id="combobox" class="proveedoresLista">
                                         <option value="0"></option>
                                        <?php 
-                                       
-                                       foreach ($todosProveedores['datos'] as $pro){
+                                    
+                                       foreach ($todosProveedores as $pro){
                                             echo '<option value="'.$pro['idProveedor'].'">'.$pro['nombrecomercial'].'</option>';
                                        }
                                        ?>
@@ -413,12 +424,11 @@ include_once $URLCom.'/modulos/mod_menu/menu.php';
                                         if (MostrarColumnaConfiguracion($configuracion['mostrar_lista'], 'codBarras') === 'Si') {
                                             $CTArticulos->ObtenerReferenciasTiendas($producto['idArticulo']);
                                             $refTiendas = $CTArticulos->GetReferenciasTiendas();
-                                            $tiendaPrincipal=$CTienda->tiendaPrincipal();
                                             
                                             echo '<td>';
                                             if ($refTiendas) {
                                                 foreach ($refTiendas as $ref) {
-                                                    if($ref['idTienda']==$tiendaPrincipal['datos'][0]['idTienda']){
+                                                    if($ref['idTienda']==$id_tienda_principal){
                                                         echo $ref['crefTienda'];
                                                     }
                                                     

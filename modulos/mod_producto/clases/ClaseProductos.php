@@ -50,7 +50,8 @@ class ClaseProductos extends ClaseTablaArticulos{
 	public function obtenerProductos($campo,$filtro=''){
 		// @ Objetivo 
 		// Obtener los campos idArticulo,articulo_name,ultimoCoste,beneficio,iva,pvpCiva,estado productos según con el filtro indicado.
-		switch ($campo) {
+        $respuesta = array();
+        switch ($campo) {
 			case 'articulo_name':
 				// Buscamos por nombre de articulo..
 				$consulta = "SELECT a.idArticulo,a.articulo_name as articulo_name"
@@ -61,19 +62,17 @@ class ClaseProductos extends ClaseTablaArticulos{
                 ."(p.idTienda =".$this->idTienda.") "
                 .$filtro;
 				break;
-			
-			case 'crefTienda':
-				// Buscamos por Referencia de tienda.
+			case  't.crefTienda':
+				// Buscamos por nombre de articulo..
 				$consulta = "SELECT a.idArticulo,a.articulo_name as articulo_name"
-				." ,atiendas.crefTienda as crefTienda,a.ultimoCoste,a.beneficio,a.iva,p.pvpSiva,p.pvpCiva,a.estado"
+				." ,a.ultimoCoste,a.beneficio,a.iva,p.pvpSiva,p.pvpCiva,a.estado"
 				." FROM `articulos` AS a "
 				."LEFT JOIN `articulosPrecios` AS p "
-				."ON p.`idArticulo` = a.`idArticulo` "
-				."LEFT JOIN `articulosTiendas` AS atiendas ON (atiendas.idArticulo = a.idArticulo) AND "
-				."(atiendas.idTienda =".$this->idTienda.") "
-				.$filtro;
+				."ON (p.`idArticulo` = a.`idArticulo`) "
+                ."LEFT JOIN `articulosTiendas` AS t ON (t.idArticulo = a.idArticulo) AND "
+                ."(t.idTienda =".$this->idTienda.") "
+                .$filtro;
 				break;
-			
 			case 'codBarras':
 				// Buscamos por Codbarras.
 				$consulta = "SELECT a.idArticulo,a.articulo_name as articulo_name"
@@ -83,11 +82,43 @@ class ClaseProductos extends ClaseTablaArticulos{
 				."ON p.`idArticulo` = a.`idArticulo` "
 				."LEFT JOIN `articulosCodigoBarras` AS aCodBarras ON (aCodBarras.idArticulo = a.idArticulo)"
 				.$filtro;
-				
+                break;
+
+            case 'a.idArticulo':
+				// Buscamos por Codbarras.
+				$consulta = "SELECT a.idArticulo,a.articulo_name as articulo_name"
+				." ,aCodBarras.codBarras as codBarras,a.ultimoCoste,a.beneficio,a.iva,p.pvpSiva,p.pvpCiva,a.estado"
+				." FROM `articulos` AS a "
+				."LEFT JOIN `articulosPrecios` AS p "
+				."ON p.`idArticulo` = a.`idArticulo` "
+				."LEFT JOIN `articulosCodigoBarras` AS aCodBarras ON (aCodBarras.idArticulo = a.idArticulo)"
+				.$filtro;
+                break;
+                
+            case 't.idVirtuemart':
+				// Buscamos por Codbarras.
+				$consulta = "SELECT a.idArticulo,a.articulo_name as articulo_name"
+				." ,a.ultimoCoste,a.beneficio,a.iva,p.pvpSiva,p.pvpCiva,a.estado"
+				." FROM `articulos` AS a "
+				."LEFT JOIN `articulosPrecios` AS p "
+				."ON p.`idArticulo` = a.`idArticulo` "
+				."LEFT JOIN `articulosTiendas` AS t ON (t.idArticulo = a.idArticulo)"
+				.$filtro;
+                break;
+
+            default :
+                // Hubo un error, no podemos continuar, ya que campo no es correcto.
+                $consulta="KO";
 			
 		}
-		
-		$respuesta = parent::Consulta($consulta);
+		if ($consulta !== 'KO'){
+            // Obtenemos items de los productos.
+            $respuesta = parent::Consulta($consulta);
+        } else {
+            $respuesta['error'] = 'Error en campo';
+            $respuesta['consulta'] = ' No se realizo consulta, ya que el campo: '.$campo. '<br/> El campo selecionado y puesto en parametros no es correcto. Recuerda borrar la configuracion de modulo de productos en cada usuario para que vaya correcto.';
+        } 
+        
 		if (isset($respuesta['error'])){
 			// Si existe error devolvemos todo el array
 			return $respuesta;
@@ -169,8 +200,13 @@ class ClaseProductos extends ClaseTablaArticulos{
 		
 	}
 		
-	
-	
+	public function GetConsulta($sql){
+        // Objetivo:
+        // Para realizar consulta y ademas los hijos de esta clase puedan tb realizar consultas.
+        $respuesta =  parent::Consulta($sql);
+		return $respuesta;
+        
+	}
 	public function cambiarTienda($id){
 		// @Objetivo
 		// Cambiar el id de la tienda , por si queremos buscar en otras tiendas simplemente.
@@ -1169,6 +1205,7 @@ class ClaseProductos extends ClaseTablaArticulos{
     }
     
     public function modificarEstadoWeb($idProducto, $idEstado, $idTienda){
+        // Modificamos estado de la tabla relacion articulosTienda.
         if($idEstado==1){
             $estado="Sin Publicar";
         }else{
@@ -1203,6 +1240,11 @@ class ClaseProductos extends ClaseTablaArticulos{
             }
 		return $respuesta;
     }
+
+    
+
+
+    
     
 }
 

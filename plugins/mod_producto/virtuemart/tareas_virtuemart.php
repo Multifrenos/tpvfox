@@ -252,9 +252,8 @@ include_once $RutaServidor.$HostNombre.'/modulos/mod_producto/clases/ClaseProduc
                         
                         foreach ($ivas_web as $ivaWeb){
                             if (number_format($ivaWeb['calc_value'],2) == number_format($datosProducto['iva'],2)){
-                                //~ error_log('iva web = '.number_format($ivaWeb['calc_value'],2). ' tipo:'.gettype(number_format($ivaWeb['calc_value'],2)));
-                                //~ error_log('iva web = '.number_format($datosProducto['iva'],2). ' tipo:'.gettype(number_format($datosProducto['iva'],2)));
-                                // Existe el iva del producto en la web.
+                                // Existe iva por lo que tenemos que poner en iva el id del iva de la web.
+                                $datosProducto['iva']=$ivaWeb['virtuemart_calc_id'];
                                 $error_iva = 'OK';
                             }
                         }
@@ -321,10 +320,17 @@ include_once $RutaServidor.$HostNombre.'/modulos/mod_producto/clases/ClaseProduc
                                     // Inserto correctamente.
                                         $addRegistro=$CTArticulos->addTiendaProducto( $producto, $tiendaWeb, $addProducto['Datos']['idArticulo'],$estado);
                                         
-                                        error_log('Linea 274 de tareas_virtuemart añado valor registro que no se que es.. '.$addRegistro);
-                                        
-                                        $respuesta['registro']=$addRegistro;
-                                        $contadorProductos=$contadorProductos+1;
+                                        if ($addRegistro['NAfectados'] == 1){
+                                            // Cambio correctamente en articulosTienda la referencia
+                                            $respuesta['registro']=$addRegistro;
+                                            $contadorProductos=$contadorProductos+$addRegistro['NAfectados'];
+                                        } else {
+                                            $respuesta['error']='Hubo un error inserta la referencia en articulosTienda';
+                                            $respuesta['errores'][] = array('tipo'    => 'warning',
+                                                    'mensaje'   => 'Hubo error al obtener la relacion de la familia web con este producto('. $datosProducto['idArticulo'].')',
+                                                    'dato'      => $addRegistro
+                                                );
+                                        }
                                     }
                                 }
 
@@ -339,7 +345,8 @@ include_once $RutaServidor.$HostNombre.'/modulos/mod_producto/clases/ClaseProduc
                                 }
                             }
                         
-                        }else{
+                        }
+                    } else{
                             // Existe ya relacion de este producto en la Web.
                             // Añadimos a array de productoEnWeb
                             $datos=array(
@@ -347,7 +354,6 @@ include_once $RutaServidor.$HostNombre.'/modulos/mod_producto/clases/ClaseProduc
                                 'nombre'=>$datosProducto['articulo_name']
                             );
                             array_push($productoEnWeb, $datos);
-                        }
                     }
                 }
            

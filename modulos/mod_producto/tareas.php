@@ -33,14 +33,12 @@ include_once $URLCom.'/clases/articulos.php';
 $CArticulo=new Articulos($BDTpv);
 include_once $URLCom.'/modulos/mod_compras/clases/albaranesCompras.php';
 $CAlbaran=new AlbaranesCompras($BDTpv);
-include_once $URLCom.'/clases/Proveedores.php';
-$CProveedor=new Proveedores($BDTpv);
+
 include_once $URLCom.'/modulos/mod_familia/clases/ClaseFamilias.php';
 $CFamilia=new ClaseFamilias($BDTpv);
-include_once $URLCom.'/modulos/mod_proveedor/clases/ClaseProveedor.php';
-$CProveedor=new ClaseProveedor($BDTpv);
 include_once $URLCom.'/clases/Proveedores.php';
-$CProveedorGen=new Proveedores($BDTpv);
+$CProveedor=new Proveedores($BDTpv);
+
 switch ($pulsado) {
 
 	case 'HtmlLineaCodigoBarras';
@@ -127,7 +125,8 @@ switch ($pulsado) {
 	break;
 	
 	case 'eliminarSeleccion':
-		$eliminar=eliminarSeleccion();
+		$deseleccionar=eliminarSeleccion();
+        $respuesta['deseleccionado'] = ' Se deselecciono '.$deseleccionar;
 	break;
 	
 	case 'obtenerCostesProveedor':
@@ -220,7 +219,7 @@ switch ($pulsado) {
         $respuesta=array();
         $productos=$CProveedor->buscarProductosProveedor($_POST['idProveedor']);
         $idsProductos=array();
-        foreach ($productos['datos'] as $producto){
+        foreach ($productos as $producto){
             
             array_push($idsProductos, $producto['idArticulo']);
         }
