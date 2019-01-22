@@ -53,26 +53,46 @@ class ClaseBalanza  extends Modelo  {
     }
     
     public function pluDeBalanza($idBalanza, $filtro){
-        //Objetivo: MOstrar los datos de cada plu y del articulo que lo compone
+        //Objetivo: Obtener los plu de la balanza con todos los datos que necesitamos para mostrar
         //Parametros:
         //  idBalanza: id de la balanza
         //  filtro: Filtro por el que vamos a ordenar, puede ser por tecla o por número de plu
-         $sql='Select a.*,  t.crefTienda,b.articulo_name , p.pvpCiva from modulo_balanza_plus as a 
+         $sql='Select a.*,  t.crefTienda,b.articulo_name ,b.tipo, p.pvpCiva from modulo_balanza_plus as a 
          inner join articulos as b on a.idArticulo=b.idArticulo  INNER JOIN articulosTiendas as t 
          on t.idArticulo=b.idArticulo and t.idTienda = '.$this->idTienda. ' inner join articulosPrecios as p on p.idArticulo=a.idArticulo  
          where a.idBalanza='.$idBalanza.' 
          order by '.$filtro.' asc';
         
-        $resultado = $this->consulta($sql);
+        $plus = $this->consulta($sql);
+        // Ahora comprobamos si hay alguno repetido en esta balanza.
+        $idsProductos = array_column($plus['datos'], 'idArticulo');
+        // Eliminamos si hay duplicados con
+        $idsProductosUnicos = array_unique($idsProductos);
+        $duplicado = array();
+        if (count($idsProductos) !== count($idsProductosUnicos)){
+            // Obtenemos la diferencia, es decir aquellos registros duplicados.
+            $duplicado = array_diff_assoc($idsProductos,$idsProductosUnicos);
+        }
+        if (count($duplicado)>0 ){
+            // Hay duplicados, por lo que marcamos UNO DE ELLOS. Ojo solo puedo marcar uno.. sin recorrer todos plus
+            foreach ($duplicado as $key=>$valor){
+                $plus['datos'][$key]['duplicado'] = 'KO';
+                
+            }
+        }
+
+        $resultado = $plus;
         return $resultado;
     }
-    public function buscarArticuloCampo($campo){
-        //@Objetivo: buscar los datos de un articulo en concreto indicandi por que campo buscar
-        $sql='SELECT a.idArticulo, a.articulo_name, b.crefTienda, c.codBarras 
-        from articulos as a INNER JOIN articulosTiendas as b on a.idArticulo=b.idArticulo inner JOIN
-        articulosCodigoBarras as c on a.idArticulo=c.idArticulo inner join tiendas as d on 
-        b.idTienda=d.idTienda 
-        where d.tipoTienda="principal" and '.$campo;
+    public function buscarArticuloCampo($busqueda){
+        //@ Objetivo:
+        // Buscar Articulos según el campo
+                $sql='SELECT a.idArticulo, a.articulo_name, b.crefTienda, c.codBarras,p.pvpCiva
+                from articulos as a LEFT JOIN articulosTiendas as b on a.idArticulo=b.idArticulo LEFT JOIN
+                articulosCodigoBarras as c on a.idArticulo=c.idArticulo LEFT join tiendas as d on 
+                b.idTienda=d.idTienda  left join articulosPrecios as p on p.idArticulo=a.idArticulo 
+                where d.tipoTienda="principal" and '.$busqueda;
+
         $resultado = $this->consulta($sql);
         return $resultado;
     }
