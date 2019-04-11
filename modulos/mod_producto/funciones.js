@@ -491,6 +491,22 @@ function GuardarBusqueda(event){
 	
 }
 
+function GuardarFiltroEstado(event){
+	// @ Objetivo :
+	// Guardar el campo el que se busca en la configuracion del usuario y del modulo.
+	// @ Parametro:
+	// 		event-> Es select....
+	console.log("GuardarFiltroEstado");
+    if (event.target.value !== 'Sin Filtrar'){
+        configuracion.estado_filtro = event.target.value;
+    } else {
+        delete configuracion.estado_filtro;
+    }
+    // Ahora creamos grabamos configuracion en usuario
+    AjaxGuardarConfiguracion();
+    // Redireccionamos
+    setTimeout(refresh,1000);
+}
 
 function refresh() {
 	// Funcion para recargar pagina.
@@ -808,9 +824,6 @@ function imprimirEtiquetas(productos, dedonde, idTienda, tamano){
 				 var resultado = $.parseJSON(response);
 				 console.log(resultado);
 				 window.open(resultado['fichero']);
-				 //~ if (bandera==1){
-					//~ location.href="ListaProductos.php";
-				//~ }
 				 
 		}	
 	});
@@ -1092,10 +1105,8 @@ function modalEstadoProductos(){
 				var titulo = 'Modificar Producto ';
                 abrirModal(titulo,resultado.html);
                
-				//~ setTimeout(function(){
                         $( ".custom-combobox-input" ).focus();
                        
-                //~ },3000);
 		}	
 	});
 }
@@ -1225,9 +1236,6 @@ function guardarProductoFamilia(idfamilia, idProducto){
                         $("#tfamilias").prepend(nuevafila);
                     }
                 }
-                
-				//cerrar modal y añadir la fila
-				 
 		}	
 	});
     
@@ -1256,8 +1264,6 @@ function buscarProductosFamilia(idFamilia){
                        }
             }	
         });
-    
-    
 }
 function buscarProductosProveedor(idProveedor){
       var parametros = {
@@ -1280,9 +1286,10 @@ function buscarProductosProveedor(idProveedor){
                           
                            selecionarItemProducto(productos[i], "listaProductos");
                        }
-            }	
+            }
         });
 }
+
 function EliminarHistorico(idHistorico, e){
    var mensaje = confirm("¿Estás seguro que quieres eliminar este registro de historico?");
 	if (mensaje) {
@@ -1312,13 +1319,9 @@ function EliminarHistorico(idHistorico, e){
                         var bisa=abuelo.parentNode; 
                         bisa.removeChild(abuelo);
                    }
-                   
-                  
-                     
-            }	
+            }
         });
     }
-    
 }
 
 function eliminarProductos(idTiendaWeb=0){
@@ -1353,13 +1356,52 @@ function eliminarProductos(idTiendaWeb=0){
                    }else{
                        location.reload(true);
                    }
-                   
-                  
-                     
-            }	
+            }
         });
     }
 }
+
+function obtenerEstadoProductoWeb(ids_productos,id_tiendaWeb){
+    // Objetivo es obtener el estado de los productos que enviemos a la web.
+    // @ Parametros:
+    //      ids_productos = (array) ids de la los productos de tpv.
+    //      id_web = (int) con el id de la tienda web.
+
+	
+	var parametros = {
+		"pulsado"       : 'obtenerEstadoProductoWeb',
+		"ids_productos" : ids_productos,
+        "id_tiendaWeb"  : id_tiendaWeb
+	};
+	$.ajax({
+		data       : parametros,
+		url        : 'tareas.php',
+		type       : 'post',
+		beforeSend : function () {
+			console.log('*********  Obteniendo Estado de productos de la web  ****************');
+		},
+		success    :  function (response) {
+			console.log('Respuesta de Obtener Estado de productos de la web');
+			
+			var resultado =  $.parseJSON(response);
+			resultado.forEach(function(producto) {
+                // Los estado 0 son sin publicar.
+                if (producto.estado === "0"){
+
+                    $("#idProducto_estadoWeb_"+producto.idArticulo).addClass( "icono_web despublicado" );
+                    //~ console.log(producto.idArticulo);
+                }
+            });
+			
+			
+		}
+	});
+	
+}
+
+
+
+
 function seleccionarTodo(){
     console.log("entre en seleccionar todo");
    for (i=1;i<41;i++){

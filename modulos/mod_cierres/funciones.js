@@ -6,8 +6,6 @@
  * @Descripcion	Javascript necesarios para modulo tpv.
  * 
  * */
-
-
 function guardarCierreCaja(){
 	alert("guardar");
 	//Objetivo 
@@ -53,7 +51,7 @@ function guardarCierreCaja(){
 			//~ } else {				
 				//~ console.log('ERROR en insercion '+response);
 			//~ }
-			document.location.href='ListaCierres.php';
+            document.location.href='ListaCierres.php';
 
 			
 		}
@@ -79,7 +77,8 @@ function metodoClick(pulsado){
 			window.location.href = './VistaCierre.php?id='+checkID[0];
 			
 		break;
-		case 'VerTicket':
+
+        case 'VerTicket':
 			console.log('Entro en Ver Ticket Cobrado');
 			// Cargamos variable global ar checkID = [];
 			//Funcion global en jquery
@@ -90,7 +89,21 @@ function metodoClick(pulsado){
 			}
 				
 			window.location.href = './ticketCerrado.php?id='+checkID[0];
-			break;
+        break;
+
+        case 'EliminarCierre':
+			// Cargamos variable global ar checkID = [];
+			//Funcion global en jquery
+			VerIdSeleccionado ();
+            var error = 0;
+            if (checkID.length >1 || checkID.length=== 0) {
+				error= 1;
+                alert ('Debes seleccionar el ultimo cierre');
+			} else {
+                // Pongo id seleccionado en variable global
+                BorrarCierre(checkID[0]);
+            }
+        break;
 		
 	}
 } 
@@ -270,8 +283,39 @@ function controladorAcciones(caja,accion){
 			break;
 	} 
 }
+function BorrarCierre(idseleccionado){
+    // Borramos el ultimo cierre si es el seleccionado
+
+    var opcion = confirm("Vas borrar eliminar el ultimo cierre ?");
+    if (opcion == true) {
+            var parametros = {
+            "pulsado"       : 'BorrarCierre',
+            "idSeleccionado": idseleccionado
+        };
+        $.ajax({
+            data       : parametros,
+            url        : 'tareas.php',
+            type       : 'post',
+            beforeSend : function () {
+                console.log('******** Estoy obteniendo el ultimo id Cierre ****************');
+            },
+            success    :  function (response) {
+                var resultado =  $.parseJSON(response); 
+                console.log(resultado);
+                // Aqui deberíamos analizar el resultado y crear un mensaje antes de redireccionar.
+                document.location.href='ListaCierres.php';
+
+            }
+        });
+	} 
 
 
+
+
+
+    
+
+}
 
 
 

@@ -43,6 +43,9 @@
         $parametros = $ClasesParametros->getRoot();
         // Cargamos configuracion modulo tanto de parametros (por defecto) como si existen en tabla modulo_configuracion 
         $conf_defecto = $ClasesParametros->ArrayElementos('configuracion');
+        // Parametro de configuracion para indicar que por defecto no filtramos los productos seleccionados.
+        $conf_defecto['filtro']->valor = 'No';
+
         // Ahora compruebo productos_seleccion:
         $botonSeleccion=0;
         $prod_seleccion = array('NItems' => 0, 'display' => '');
@@ -57,9 +60,10 @@
             $conf_defecto['filtro']->valor = 'No';
             
         }
-      
+        
         // Obtenemos la configuracion del usuario o la por defecto
         $configuracion = $Controler->obtenerConfiguracion($conf_defecto, 'mod_productos', $Usuario['id']);
+       
         // Compruebo que solo halla un campo por el que buscar por defecto.
         if (!isset($configuracion['tipo_configuracion'])) {
             // Hubo un error en la carga de configuracion.
@@ -70,7 +74,6 @@
             $CTArticulos->SetComprobaciones($error);
         }
         $htmlConfiguracion = HtmlListadoCheckMostrar($configuracion['mostrar_lista']);
-
         if (isset($htmlConfiguracion['error'])) {
             // quiere decir que hubo error en la configuracion.
             $error = array('tipo' => 'danger',
@@ -80,26 +83,52 @@
             $CTArticulos->SetComprobaciones($error);
         }
 
-        // --- Inicializamos objteto de Paginado --- //
+        // Montar select Estado y añadir a configuracion seleccion estado.
+        $option_sinFiltrar = '<option value="Sin Filtrar">Sin Filtrar</option>';
+        if (!isset($configuracion['estado_filtro'])){
+            // No existe estado_filtro por lo que ponemos por defecto
+            $configuracion['estado_filtro'] ='';
+            $option_sinFiltrar = '<option value="Sin Filtrar" selected>Sin Filtrar</option>';
+
+        }
+   		$posibles_estados_producto = $CTArticulos->posiblesEstados('articulos');
+        $htmlEstadosProducto =  $option_sinFiltrar;
+        $htmlEstadosProducto .= htmlOptionEstados($posibles_estados_producto,$configuracion['estado_filtro']);
+        $filtro_estado = '';
+        if ($configuracion['estado_filtro'] !==''){
+            $filtro_estado = 'a.estado="'.$configuracion['estado_filtro'].'"';
+        }
+
+        // --- Inicializamos objeto de Paginado --- //
         $NPaginado = new PluginClasePaginacion(__FILE__);
         $campos = array($htmlConfiguracion['campo_defecto']);
-        $NPaginado->SetCamposControler($Controler, $campos);
+        $NPaginado->SetCamposControler($campos);
         // --- Ahora contamos registro que hay para es filtro --- //
         $filtro = $NPaginado->GetFiltroWhere();
         $CantidadRegistros = 0;
-        if (trim($NPaginado->GetFiltroWhere()) !== '') {
+        if (trim($filtro)!== '') {
             // Solo contamos si tenemos filtro.
+            if ($filtro_estado !== ''){
+                $filtro = $filtro.' AND '.$filtro_estado;
+            }
             $CantidadRegistros = count($CTArticulos->obtenerProductos($htmlConfiguracion['campo_defecto'], $filtro));
         } else {
-            $CantidadRegistros = $CTArticulos->GetNumRows();
+            if ($filtro_estado !== ''){
+                // Si filtramos por estado.
+                $filtro = 'WHERE '.$filtro_estado;
+                $CantidadRegistros = count($CTArticulos->obtenerProductos($htmlConfiguracion['campo_defecto'], $filtro));
+            } else {
+                $CantidadRegistros = $CTArticulos->GetNumRows();
+            }
         }
         // --- Ahora envio a NPaginado la cantidad registros --- //
-       
+        
         if ($prod_seleccion['NItems'] > 0 && $configuracion['filtro']->valor === 'Si') {
             $NPaginado->SetCantidadRegistros($prod_seleccion['NItems']);
         } else {
             $NPaginado->SetCantidadRegistros($CantidadRegistros);
         }
+      
         $htmlPG = '';
         if ($CantidadRegistros > 0 || $prod_seleccion['NItems'] > 0) {
             $htmlPG = $NPaginado->htmlPaginado();
@@ -116,7 +145,6 @@
             }
             $productos = $CTArticulos->obtenerProductos($htmlConfiguracion['campo_defecto'], $filtro . $NPaginado->GetLimitConsulta());
         }
-        
         if (isset($productos['error'])){
             //Hubo un error a la ahora obtener los datos de los productos.
             $error = array('tipo' => 'danger',
@@ -141,6 +169,7 @@
             echo $ObjVirtuemart->htmlJava();
             $tiendaWeb=$ObjVirtuemart->getTiendaWeb();
         }
+
         
         // -------------- Obtenemos de parametros cajas con sus acciones ---------------  //
 		$VarJS = $Controler->ObtenerCajasInputParametros($parametros).$OtrosVarJS;
@@ -300,18 +329,18 @@ include_once $URLCom.'/modulos/mod_menu/menu.php';
                     //enviamos por get palabras a buscar, las recogemos al inicio de la pagina
                     ?>
                     <form action="./ListaProductos.php" method="GET" name="formBuscar">
-                        <div class="form-group ClaseBuscar col-md-5">
-                            <label>Buscar por:</label>
-                            <select onchange="GuardarBusqueda(event);" name="SelectBusqueda" id="sel1"> <?php echo $htmlConfiguracion['htmlOption']; ?> </select>
-                            <input id="buscar" type="text" name="buscar" size="10" value="<?php echo $NPaginado->GetBusqueda(); ?>">
+                        <div class="form-group ClaseBuscar col-md-4">
+                            <label>Buscar por:
+                            <select onchange="GuardarBusqueda(event);" name="SelectBusqueda" id="sel1"> <?php echo $htmlConfiguracion['htmlOption']; ?> </select></label>
+                            <input id="buscar" type="text" name="buscar" size="25" value="<?php echo $NPaginado->GetBusqueda(); ?>">
                             <input type="submit" value="buscar">
                         </div>
                         <div id="familiasDiv" class="col-md-3">
                             <div class="ui-widget">
                              <label for="tags">Buscar por Familias:</label>
                              <select id="combobox" class="familiasLista">
-                                <option value="0"></option>
-                                <option value="01">-Productos sin familia</option>
+                                <option></option>
+                                <option value="0">-Productos sin familia</option>
                                  <?php 
                                    $arbolfamilias=selectFamilias(0, '', array(), $BDTpv);
                                    foreach($arbolfamilias as $familia){
@@ -340,9 +369,34 @@ include_once $URLCom.'/modulos/mod_menu/menu.php';
                             </div>
                             <p id="botonEnviarPro"></p>
                         </div>
+                        <div id="EstadoDiv" class="col-md-2">
+                            <label>Filtrar estado</label>
+                             <select onchange="GuardarFiltroEstado(event);" name="FiltroEstado" id="sel1"> <?php echo $htmlEstadosProducto; ?> </select>
+                        </div>
                     </form>
                     <!-- TABLA DE PRODUCTOS -->
                     <div>
+                        <?php
+                        // Generamos array con los productos de esta pagina para poder ejecutar ajax
+                        // para comprobar el estado en la web.
+                        if (MostrarColumnaConfiguracion($configuracion['mostrar_lista'], 't.idVirtuemart')==='Si'){
+                            if ($CTArticulos->SetPlugin('ClaseVirtuemart') !== false){
+                                if (isset($productos)) {
+                            // Si existen productos.
+                                $ids= array_column($productos, 'idArticulo')
+                                ?>
+                                <script type="text/javascript">
+                                    <?php
+                                    echo 'var ids_productos='.json_encode($ids).';';
+                                    echo 'var id_tiendaWeb ='.$tiendaWeb['idTienda'].';';
+                                    ?>
+                                
+                                </script>
+                            <?php
+                                }
+                            }
+                        }
+                        ?>
                         <table class="table table-bordered table-hover tablaPrincipal">
                             <thead>
                                 <tr>
@@ -353,7 +407,7 @@ include_once $URLCom.'/modulos/mod_menu/menu.php';
                                     if (MostrarColumnaConfiguracion($configuracion['mostrar_lista'], 'codBarras') === 'Si') {
                                         echo '<th>CODIGO BARRAS</th>';
                                     }
-                                    if (MostrarColumnaConfiguracion($configuracion['mostrar_lista'], 'crefTienda') === 'Si') {
+                                    if (MostrarColumnaConfiguracion($configuracion['mostrar_lista'], 't.crefTienda') === 'Si') {
                                         echo '<th>REFERENCIA</th>';
                                     }
                                     ?>
@@ -408,7 +462,7 @@ include_once $URLCom.'/modulos/mod_menu/menu.php';
                                         $htmltd = '<td style="cursor:pointer" onclick="UnProductoClick(' . "'" . $producto['idArticulo'] . "'" . ');">';
                                         echo $htmltd . $producto['idArticulo'] . '</td>';
                                         echo $htmltd . $producto['articulo_name'] . '<br><SUB>'.$textoFamilia.'</SUB></td>';
-                                        if (MostrarColumnaConfiguracion($configuracion['mostrar_lista'], 'crefTienda') === 'Si') {
+                                        if (MostrarColumnaConfiguracion($configuracion['mostrar_lista'], 'codBarras') === 'Si') {
                                             $CTArticulos->ObtenerCodbarrasProducto($producto['idArticulo']);
                                             $codBarrasProd = $CTArticulos->GetCodbarras();
                                             echo '<td>';
@@ -421,7 +475,7 @@ include_once $URLCom.'/modulos/mod_menu/menu.php';
                                         }
                                         ?>
                                         <?php
-                                        if (MostrarColumnaConfiguracion($configuracion['mostrar_lista'], 'codBarras') === 'Si') {
+                                        if (MostrarColumnaConfiguracion($configuracion['mostrar_lista'], 't.crefTienda') === 'Si') {
                                             $CTArticulos->ObtenerReferenciasTiendas($producto['idArticulo']);
                                             $refTiendas = $CTArticulos->GetReferenciasTiendas();
                                             
@@ -456,7 +510,7 @@ include_once $URLCom.'/modulos/mod_menu/menu.php';
                                             <?php 
                                              if(isset($tiendaWeb)){
                                             ?>
-                                        <td>
+                                        <td id="idProducto_estadoWeb_<?php echo $producto['idArticulo'];?>">
                                         <?php
                                         if(isset($refTiendas)){
                                             foreach ($refTiendas as $ref){
@@ -546,7 +600,21 @@ include_once $URLCom.'/modulos/mod_menu/menu.php';
         }
         
         ?>
-        
+        <?php
+        // Solo ejecutamos si hay producto y hay web,
+        if (MostrarColumnaConfiguracion($configuracion['mostrar_lista'], 't.idVirtuemart') === 'Si'){
+            if ($CTArticulos->SetPlugin('ClaseVirtuemart') !== false){
+                if (isset($productos)) {
+            ?>
+                    $(document).ready(function() {
+                        obtenerEstadoProductoWeb(ids_productos,id_tiendaWeb);
+                    });
+            <?php
+                }
+            }
+        }
+        ?>
+
         
         </script>
          <style>
